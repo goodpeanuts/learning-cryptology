@@ -16,5 +16,5 @@ target/%: %.cpp
 	$(CXX) $< -o $@
 
 # 清理目标
-# clean:
-#     rm -rf target
+clean:
+	rm -rf target

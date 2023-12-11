@@ -44,13 +44,13 @@ def main():
         print("3. 退出")
         choice = input("请输入你的选择")
         if choice == "1":
-            cipher_text = input("请输入密文")
+            cipher_text = input("请输入明文： ")
             key = input("请输入密钥")
-            print("密文结果为：%s" % encrypt_vigenere(cipher_text, key))
+            print("加密结果为：%s" % encrypt_vigenere(cipher_text, key))
         elif choice == "2":
             plain_text = input("请输入密文： ")
             key = input("请输入密钥： ")
-            print("明文结果为： %s" % decrypt_vigenere(plain_text, key))
+            print("解密结果为： %s" % decrypt_vigenere(plain_text, key))
         elif choice == "3":
             break
         else:
