@@ -84,7 +84,7 @@ CryptoPP::Integer modInverse(CryptoPP::Integer a, CryptoPP::Integer m) {
  * @return true 
  * @return false 
  */
-bool MillerRabinTest(const CryptoPP::Integer &n, int iterations)
+bool millerRabinTest(const CryptoPP::Integer &n, int iterations)
 {
     if (n <= 1 || (n > 2 && n % 2 == 0))
         return false; // 小于等于1或者偶数（除了2）不是素数
@@ -129,13 +129,13 @@ CryptoPP::Integer generatePrime(int bits)
         // 生成一个2048位的随机数
         rand_prime = CryptoPP::Integer(rng, bits);
 
-        isPrime = MillerRabinTest(rand_prime, 10);
+        isPrime = millerRabinTest(rand_prime, 10);
         // isPrime = CryptoPP::IsPrime(rand_prime);
     }
     return rand_prime;
 }
 
-void generateKey()
+void generateBigPrime()
 {
     CryptoPP::Integer e(65537);
     CryptoPP::Integer p = generatePrime(2048);
@@ -165,5 +165,5 @@ void generateKey()
 int main()
 {
     // 生成密钥
-    generateKey();
+    generateBigPrime();
 }
