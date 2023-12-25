@@ -11,14 +11,14 @@ void main( void )
 	int read_len;
 	int i ;
 	char temp[8]={0};
-	unsigned char digest[16]; //存放结果 
+	unsigned char digest[16]; 
 	char hexbuf[128]="12334567";
 	unsigned char decrypt[16]={0};  
 	unsigned char decrypt32[64]={0};	
 
 	MD5_CTX md5c; 
 
-	MD5Init(&md5c); //初始化
+	MD5Init(&md5c); //锟斤拷始锟斤拷
 	read_len = strlen(hexbuf);
 	MD5Update(&md5c,(unsigned char *)hexbuf,read_len);	
 
