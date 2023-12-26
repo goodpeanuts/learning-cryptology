@@ -1,8 +1,8 @@
 /*
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:38:23
- * @LastEditors: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
- * @LastEditTime: 2023-12-13 16:01:28
+ * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
+ * @LastEditTime: 2023-12-26 12:32:52
  * @FilePath: /learning-cryptology/aes/aes.h
  * @Description:
  *
@@ -313,11 +313,11 @@ public:
 
     /**
      * @brief 块异或
-     * 
-     * @param b1        
-     * @param b2 
-     * @param b3 
-     * @param len 
+     *
+     * @param b1
+     * @param b2
+     * @param b3
+     * @param len
      */
     void xor_blocks(const unsigned char *b1, const unsigned char *b2, unsigned char *b3, unsigned int len)
     {
@@ -371,10 +371,10 @@ public:
 
     /**
      * @brief 分组加密函数
-     * 
+     *
      * @param in    明文输入
-     * @param out   密文输出 
-     * @param roundKeys 轮密钥 
+     * @param out   密文输出
+     * @param roundKeys 轮密钥
      */
     void encrypt_block(const unsigned char in[], unsigned char out[],
                        unsigned char *roundKeys)
@@ -510,26 +510,30 @@ public:
             xor_blocks(in + i, encryptedBlock, out + i, blockByteslen);
             memcpy(block, in + i, blockByteslen);
         }
+        // Remove padding
+        unsigned char padlen = out[inLen - 1];
+        unsigned char *final_out = new unsigned char[inLen - padlen];
+        memcpy(final_out, out, inLen - padlen);
 
         delete[] roundKeys;
 
-        return out;
+        return final_out;
     }
 
     /**
      * @brief CFB解密接口
-     * 
-     * @param in 
-     * @param key 
-     * @param iv 
-     * @return std::vector<unsigned char> 
+     *
+     * @param in
+     * @param key
+     * @param iv
+     * @return std::vector<unsigned char>
      */
     std::vector<unsigned char> decrypt_CFB(std::vector<unsigned char> in,
-                                               std::vector<unsigned char> key,
-                                               std::vector<unsigned char> iv)
+                                           std::vector<unsigned char> key,
+                                           std::vector<unsigned char> iv)
     {
         unsigned char *out = decrypt_CFB(vector_to_array(in), (unsigned int)in.size(),
-                                        vector_to_array(key), vector_to_array(iv));
+                                         vector_to_array(key), vector_to_array(iv));
         std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
         delete[] out;
         return v;

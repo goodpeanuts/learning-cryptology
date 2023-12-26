@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:16:20
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-25 23:09:15
+ * @LastEditTime: 2023-12-26 12:45:01
  * @FilePath: /learning-cryptology/aes/aes.cpp
  * @Description:
  *
@@ -18,7 +18,8 @@
 const char *welcom_msg = "=========== AES ===========\n"
                          "1. 测试字符串\n"
                          "2. 测试文件\n"
-                         "3. 退出\n"
+                         "3. 测试大文件\n"
+                         "4. 退出\n"
                          "==========================\n"
                          "请选择:";
 
@@ -64,6 +65,8 @@ void testString()
 
     std::cout << "=========== 字符串加密 ===========" << std::endl;
     std::cout << "输入明文: ";
+    // 避免受到回车的影响
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::getline(std::cin, plain_text);
     std::cout << "输入密钥: ";
     std::cin >> key;
@@ -112,7 +115,7 @@ void testFile()
     std::vector<unsigned char> out{};
     std::vector<unsigned char> k{};
 
-    std::cout << "=========== 文件加密 ===========" << std::endl;
+    std::cout << "=========== 文件加解密 ===========" << std::endl;
     std::cout << "输入文件名: ";
     std::cin >> filename;
     std::cout << "输入密钥: ";
@@ -149,6 +152,54 @@ void testFile()
     std::cout << std::endl;
     writeVectorToFile("", out);
 }
+
+void buffer_test()
+{
+    std::string filename = "q.mkv";
+    std::string output_filename = "mid";
+    std::string key = "1234567890abcdef";
+    std::vector<unsigned char> iv = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                     0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+    std::vector<unsigned char> in{};
+    std::vector<unsigned char> out{};
+    std::vector<unsigned char> k{};
+
+    std::cout << "=========== 大文件加密 ===========" << std::endl;
+
+    k.assign(key.begin(), key.end());
+
+    AES aes(AESMode::AES_128);
+
+    std::ifstream input_file(filename, std::ios::binary);
+    std::ofstream output_file(output_filename, std::ios::binary);
+
+    const size_t buffer_size = 4 * 1024 * 1024; // 4MB
+    char *buffer = new char[buffer_size];
+
+    while (input_file.read(buffer, buffer_size))
+    {
+        std::streamsize size = input_file.gcount();
+        in.assign(buffer, buffer + size);
+        out = aes.encrypt_CFB(in, k, iv);
+        output_file.write(reinterpret_cast<const char *>(out.data()), out.size());
+    }
+
+    // Handle the last block
+    if (!input_file.eof())
+    {
+        std::streamsize size = input_file.gcount();
+        in.assign(buffer, buffer + size);
+        out = aes.encrypt_CFB(in, k, iv);
+        output_file.write(reinterpret_cast<const char *>(out.data()), out.size());
+    }
+
+    delete[] buffer;
+    input_file.close();
+    output_file.close();
+
+   
+    
+}
 // 1234567890abcdef
 int main()
 {
@@ -166,6 +217,9 @@ int main()
             testFile();
             break;
         case 3:
+            buffer_test();
+            break;
+        case 4:
             return 0;
         default:
             std::cout << "输入错误!" << std::endl;

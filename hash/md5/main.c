@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-25 20:45:38
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-25 21:35:09
+ * @LastEditTime: 2023-12-26 12:54:20
  * @FilePath: /learning-cryptology/hash/md5/main.c
  * @Description:
  *
@@ -16,10 +16,7 @@
 #include <fcntl.h>
 #include <string.h>
 
-const char *welcome = "Welcome to the md5 tool!\n"
-					  "1. Calculate the md5 of a file\n"
-					  "2. Calculate the md5 of a string\n"
-					  "Please input your choice: ";
+const char *welcome = "1. 计算文件md5\n2. 计算字符串md5\n3. 退出\n请输入操作: ";
 
 int getFileMD5(char *filename, char *dest)
 {
@@ -128,7 +125,7 @@ int main(int argc, char *argv[])
 		case 1:
 		{
 			char filename[128] = {0};
-			printf("Please input the filename: ");
+			printf("请输入文件名: ");
 			scanf("%s", filename);
 			fileMD5(filename);
 			break;
@@ -136,7 +133,7 @@ int main(int argc, char *argv[])
 		case 2:
 		{
 			char str[128] = {0};
-			printf("Please input the string: ");
+			printf("请输入字符串: ");
 			scanf("%s", str);
 			strMd5(str);
 			break;
@@ -147,7 +144,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		default:
-			printf("Invalid input!\n");
+			printf("无效输入，请重新输入\n");
 		}
 	}
 	return 0;
