@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:38:23
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-26 12:32:52
+ * @LastEditTime: 2023-12-26 23:01:24
  * @FilePath: /learning-cryptology/aes/aes.h
  * @Description:
  *
@@ -359,13 +359,23 @@ public:
         unsigned int padlen = blockByteslen - len % blockByteslen;
         unsigned char padbyte = padlen;
 
+        std::cout << "@" << std::endl;
+        std::cout << "填充前: " << v.size() << std::endl;
+        std::cout << "blockByteslen: " << blockByteslen << std::endl;
+        std::cout << "len % blockByteslen: " << len % blockByteslen << std::endl;
+        std::cout << "填充长度: " << padlen << std::endl;
+
         // 创建一个随机数生成器
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> dis(0, 255);
 
         for (unsigned int i = 0; i < padlen - 1; i++)
-            v.push_back(dis(gen)); // 使用生成器生成随机数
+        {
+            int r = dis(gen);
+            // std::cout << "r: " << r << std::endl;
+            v.push_back(r); // 使用生成器生成随机数
+        }
         v.push_back(padbyte);
     }
 
@@ -477,7 +487,12 @@ public:
                                            std::vector<unsigned char> key,
                                            std::vector<unsigned char> iv)
     {
-        padding_iso10126(in);
+        std::cout << "输入长度: " << in.size() << std::endl;
+        if (in.size() % blockByteslen != 0)
+        {
+            std::cout << "输入长度不是16的倍数" << std::endl;
+            padding_iso10126(in);
+        }
         unsigned char *out = encrypt_CFB(vector_to_array(in), (unsigned int)in.size(),
                                          vector_to_array(key), vector_to_array(iv));
         std::vector<unsigned char> v = array_to_vector(out, in.size());
@@ -496,7 +511,9 @@ public:
      */
     unsigned char *decrypt_CFB(const unsigned char in[], unsigned int inLen,
                                const unsigned char key[],
-                               const unsigned char *iv)
+                               const unsigned char *iv,
+                               unsigned int &outLen,
+                               bool final)
     {
         unsigned char *out = new unsigned char[inLen];
         unsigned char block[blockByteslen];
@@ -510,14 +527,18 @@ public:
             xor_blocks(in + i, encryptedBlock, out + i, blockByteslen);
             memcpy(block, in + i, blockByteslen);
         }
-        // Remove padding
-        unsigned char padlen = out[inLen - 1];
-        unsigned char *final_out = new unsigned char[inLen - padlen];
-        memcpy(final_out, out, inLen - padlen);
-
-        delete[] roundKeys;
-
-        return final_out;
+        if (final)
+        {
+            std::cout << "解密输入: " << inLen << std::endl;
+            std::cout << "补位长度: " << (unsigned int)out[inLen - 1] << std::endl;
+            outLen = inLen - (unsigned int)out[inLen - 1];
+            std::cout << "输出长度: " << outLen << std::endl;
+        }
+        else
+        {
+            outLen = inLen;
+        }
+        return out;
     }
 
     /**
@@ -530,12 +551,17 @@ public:
      */
     std::vector<unsigned char> decrypt_CFB(std::vector<unsigned char> in,
                                            std::vector<unsigned char> key,
-                                           std::vector<unsigned char> iv)
+                                           std::vector<unsigned char> iv,
+                                           bool final)
     {
+        unsigned int outLen{};
         unsigned char *out = decrypt_CFB(vector_to_array(in), (unsigned int)in.size(),
-                                         vector_to_array(key), vector_to_array(iv));
+                                         vector_to_array(key), vector_to_array(iv), outLen, final);
+        std::cout << "输出长度: " << outLen << std::endl;
         std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
         delete[] out;
+        v.resize(outLen);
+        std::cout << "v.size(): " << v.size() << std::endl;
         return v;
     }
 };
