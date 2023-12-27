@@ -1,8 +1,58 @@
+/*
+ * @Author: goodpeanuts goddpeanuts@foxmail.com
+ * @Date: 2023-12-25 20:45:38
+ * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
+ * @LastEditTime: 2023-12-27 14:08:22
+ * @FilePath: /learning-cryptology/ab/md5.h
+ * @Description: 
+ * 
+ * Copyright (c) 2023 by goodpeanuts, All Rights Reserved. 
+ */
 #include <memory.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include "md5.h"
+#include <unistd.h>
 
+#ifndef MD5_H
+#define MD5_H
+ 
+typedef struct
+{
+    unsigned int count[2];
+    unsigned int state[4];
+    unsigned char buffer[64];   
+}MD5_CTX;
+ 
+                         
+#define F(x,y,z) ((x & y) | (~x & z))
+#define G(x,y,z) ((x & z) | (y & ~z))
+#define H(x,y,z) (x^y^z)
+#define I(x,y,z) (y ^ (x | ~z))
+#define ROTATE_LEFT(x,n) ((x << n) | (x >> (32-n)))
+#define FF(a,b,c,d,x,s,ac) \
+          { \
+          a += F(b,c,d) + x + ac; \
+          a = ROTATE_LEFT(a,s); \
+          a += b; \
+          }
+#define GG(a,b,c,d,x,s,ac) \
+          { \
+          a += G(b,c,d) + x + ac; \
+          a = ROTATE_LEFT(a,s); \
+          a += b; \
+          }
+#define HH(a,b,c,d,x,s,ac) \
+          { \
+          a += H(b,c,d) + x + ac; \
+          a = ROTATE_LEFT(a,s); \
+          a += b; \
+          }
+#define II(a,b,c,d,x,s,ac) \
+          { \
+          a += I(b,c,d) + x + ac; \
+          a = ROTATE_LEFT(a,s); \
+          a += b; \
+          }                                            
 unsigned char PADDING[] = {0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -17,41 +67,7 @@ void MD5Init(MD5_CTX *context)
     context->state[2] = 0x98BADCFE;
     context->state[3] = 0x10325476;
 }
-void MD5Update(MD5_CTX *context, unsigned char *input, unsigned int inputlen)
-{
-    unsigned int i = 0, index = 0, partlen = 0;
-    index = (context->count[0] >> 3) & 0x3F;
-    partlen = 64 - index;
-    context->count[0] += inputlen << 3;
-    if (context->count[0] < (inputlen << 3))
-        context->count[1]++;
-    context->count[1] += inputlen >> 29;
 
-    if (inputlen >= partlen)
-    {
-        memcpy(&context->buffer[index], input, partlen);
-        MD5Transform(context->state, context->buffer);
-        for (i = partlen; i + 64 <= inputlen; i += 64)
-            MD5Transform(context->state, &input[i]);
-        index = 0;
-    }
-    else
-    {
-        i = 0;
-    }
-    memcpy(&context->buffer[index], &input[i], inputlen - i);
-}
-void MD5Final(MD5_CTX *context, unsigned char digest[16])
-{
-    unsigned int index = 0, padlen = 0;
-    unsigned char bits[8];
-    index = (context->count[0] >> 3) & 0x3F;
-    padlen = (index < 56) ? (56 - index) : (120 - index);
-    MD5Encode(bits, context->count, 8);
-    MD5Update(context, PADDING, padlen);
-    MD5Update(context, bits, 8);
-    MD5Encode(digest, context->state, 16);
-}
 void MD5Encode(unsigned char *output, unsigned int *input, unsigned int len)
 {
     unsigned int i = 0, j = 0;
@@ -162,6 +178,43 @@ void MD5Transform(unsigned int state[4], unsigned char block[64])
     state[3] += d;
 }
 
+void MD5Update(MD5_CTX *context, unsigned char *input, unsigned int inputlen)
+{
+    unsigned int i = 0, index = 0, partlen = 0;
+    index = (context->count[0] >> 3) & 0x3F;
+    partlen = 64 - index;
+    context->count[0] += inputlen << 3;
+    if (context->count[0] < (inputlen << 3))
+        context->count[1]++;
+    context->count[1] += inputlen >> 29;
+
+    if (inputlen >= partlen)
+    {
+        memcpy(&context->buffer[index], input, partlen);
+        MD5Transform(context->state, context->buffer);
+        for (i = partlen; i + 64 <= inputlen; i += 64)
+            MD5Transform(context->state, &input[i]);
+        index = 0;
+    }
+    else
+    {
+        i = 0;
+    }
+    memcpy(&context->buffer[index], &input[i], inputlen - i);
+}
+
+void MD5Final(MD5_CTX *context, unsigned char digest[16])
+{
+    unsigned int index = 0, padlen = 0;
+    unsigned char bits[8];
+    index = (context->count[0] >> 3) & 0x3F;
+    padlen = (index < 56) ? (56 - index) : (120 - index);
+    MD5Encode(bits, context->count, 8);
+    MD5Update(context, PADDING, padlen);
+    MD5Update(context, bits, 8);
+    MD5Encode(digest, context->state, 16);
+}
+
 int getFileMD5(char *filename, char *dest)
 {
 	int i;
@@ -208,7 +261,7 @@ int getFileMD5(char *filename, char *dest)
 		sprintf(temp, "%02x", decrypt[i]);
 		strcat((char *)decrypt32, temp);
 	}
-	strcpy(dest, decrypt32);
+	strcpy(dest, reinterpret_cast<const char*>(decrypt32));
 
 	printf("md5:%s len=%d\n", dest, filelen);
 	close(fdf);
@@ -229,14 +282,14 @@ void fileMD5(char *filename)
 	}
 }
 
-void strMd5(char *str)
+char* strMd5(char *str)
 {
 	int read_len;
 	int i;
 	char temp[8] = {0};
 	unsigned char digest[16];
 	unsigned char decrypt[16] = {0};
-	unsigned char decrypt32[64] = {0};
+	unsigned char* decrypt32 = new unsigned char[64]();
 
 	MD5_CTX md5c;
 
@@ -254,5 +307,8 @@ void strMd5(char *str)
 	}
 	printf("md5:%s\n", decrypt32);
 
-	return;
+	return reinterpret_cast<char*>(decrypt32);
 }
+
+ 
+#endif

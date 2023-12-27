@@ -1,3 +1,13 @@
+/*
+ * @Author: goodpeanuts goddpeanuts@foxmail.com
+ * @Date: 2023-12-25 20:45:38
+ * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
+ * @LastEditTime: 2023-12-27 13:21:20
+ * @FilePath: /learning-cryptology/hash/md5/md5.h
+ * @Description: 
+ * 
+ * Copyright (c) 2023 by goodpeanuts, All Rights Reserved. 
+ */
 #ifndef MD5_H
 #define MD5_H
  
@@ -44,5 +54,8 @@ void MD5Final(MD5_CTX *context,unsigned char digest[16]);
 void MD5Transform(unsigned int state[4],unsigned char block[64]);
 void MD5Encode(unsigned char *output,unsigned int *input,unsigned int len);
 void MD5Decode(unsigned int *output,unsigned char *input,unsigned int len);
+int getFileMD5(char *filename, char *dest);
+void fileMD5(char *filename);
+void strMd5(char *str);
  
 #endif

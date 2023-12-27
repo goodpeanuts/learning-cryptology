@@ -2,8 +2,8 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-25 15:51:45
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-25 19:46:29
- * @FilePath: /learning-cryptology/rsa/rsa_class.cpp
+ * @LastEditTime: 2023-12-27 14:30:48
+ * @FilePath: /learning-cryptology/ab/rsa.h
  * @Description:
  *
  * Copyright (c) 2023 by goodpeanuts, All Rights Reserved.
@@ -226,13 +226,26 @@ public:
         return this->n;
     }
 
-    CryptoPP::Integer encode_string(const std::string &str)
+    void set_public_key(const CryptoPP::Integer &e)
+    {
+        this->e = e;
+    }
+    void set_private_key(const CryptoPP::Integer &d)
+    {
+        this->d = d;
+    }
+    void set_n(const CryptoPP::Integer &n)
+    {
+        this->n = n;
+    }
+
+    static CryptoPP::Integer encode_string(const std::string &str)
     {
         CryptoPP::Integer num;
         num.Decode((const CryptoPP::byte *)str.data(), str.size());
         return num;
     }
-    std::string decode_string(const CryptoPP::Integer &num)
+    static std::string decode_string(const CryptoPP::Integer &num)
     {
         // 将CryptoPP::Integer对象转换为字节串
         size_t size = num.MinEncodedSize();
@@ -244,32 +257,3 @@ public:
         return str;
     }
 };
-
-void test_string()
-{
-    RSA rsa(2048);
-    std::string input = "hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world hello world ";
-
-    CryptoPP::Integer pub_key = rsa.get_public_key();
-    CryptoPP::Integer pri_key = rsa.get_private_key();
-    CryptoPP::Integer n = rsa.get_n();
-    size_t bits = n.BitCount();
-
-    std::cout << "------- 明文 -------" << std::endl;
-    std::cout << "plain_text: " << input << std::endl;
-
-    std::cout << "------- 加密 -------" << std::endl;
-    CryptoPP::Integer cipher_text = a_exp_b_mod_c(rsa.encode_string(input), pub_key, n);
-    std::cout << "cipher_text: " << cipher_text << std::endl;
-
-    std::cout << "------- 解密 -------" << std::endl;
-    std::string plain_text = rsa.decode_string(a_exp_b_mod_c(cipher_text, pri_key, n));
-    std::cout << "plain_text: " << plain_text << std::endl;
-
-    assert(input == plain_text);
-}
-
-int main()
-{
-    test_string();
-}

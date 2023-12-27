@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-20 07:21:22
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-25 18:52:54
+ * @LastEditTime: 2023-12-27 14:21:52
  * @FilePath: /learning-cryptology/rsa/test.cpp
  * @Description: 测试素性检验算法的速度
  *
@@ -11,10 +11,6 @@
 #include <iostream>
 #include <cassert>
 #include <cstring>
-#include <gmp.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
 #include <cryptopp/osrng.h>
 #include <cryptopp/base64.h>
 #include <cryptopp/rsa.h>
@@ -89,65 +85,6 @@ CryptoPP::Integer modInverse(CryptoPP::Integer a, CryptoPP::Integer m)
     }
 }
 
-void sslTest()
-{
-    int ret = 0;
-    RSA *r = RSA_new();
-    BIGNUM *bne = BN_new();
-    unsigned long e = RSA_F4;
-
-    ret = BN_set_word(bne, e);
-    if (ret != 1)
-    {
-        // handle error
-    }
-
-    ret = RSA_generate_key_ex(r, 2048, bne, NULL);
-    if (ret != 1)
-    {
-        // handle error
-    }
-
-    // 明文
-    const char *plaintext = "Hello, RSA!";
-    // 分配内存来保存密文和解密后的文本
-    unsigned char *ciphertext = (unsigned char *)malloc(RSA_size(r));
-    unsigned char *decrypted_text = (unsigned char *)malloc(RSA_size(r));
-
-    // 加密
-    int ciphertext_len = RSA_public_encrypt(strlen(plaintext), (const unsigned char *)plaintext, ciphertext, r, RSA_PKCS1_PADDING);
-    if (ciphertext_len == -1)
-    {
-        // handle error
-    }
-
-    // 打印结果
-    std::cout << "Encrypted Text: " << ciphertext << std::endl;
-
-    // 解密
-    int decrypted_text_len = RSA_private_decrypt(ciphertext_len, ciphertext, decrypted_text, r, RSA_PKCS1_PADDING);
-    if (decrypted_text_len == -1)
-    {
-        // handle error
-    }
-
-    // 打印结果
-    std::cout << "Decrypted Text: " << decrypted_text << std::endl;
-
-    // 打印公钥
-    PEM_write_RSAPublicKey(stdout, r);
-
-    // 打印私钥
-    PEM_write_RSAPrivateKey(stdout, r, NULL, NULL, 0, NULL, NULL);
-
-    // 释放内存
-    free(ciphertext);
-    free(decrypted_text);
-
-    // 释放RSA结构
-    RSA_free(r);
-    BN_free(bne);
-}
 
 // 素性检验
 bool millerRabinTest(const CryptoPP::Integer &n, int iterations)
@@ -293,16 +230,6 @@ void generate_keys(size_t key_size)
     // std::cout << "d: " << d << std::endl;
     std::cout << "gcd: " << gcd(e, fn) << std::endl;
     std::cout << "d * e % n: " << d * e % fn << std::endl;
-}
-
-void getBitCount()
-{
-    std::string str;
-    std::cin >> str;
-    mpz_t num;
-    mpz_init_set_str(num, str.c_str(), 10);    // 将字符串转换为mpz_t，假设str是十进制表示的
-    size_t bit_count = mpz_sizeinbase(num, 2); // 获取二进制位数
-    std::cout << bit_count << std::endl;
 }
 
 
