@@ -2,8 +2,8 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:38:23
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 21:03:52
- * @FilePath: /learning-cryptology/aes/aes.h
+ * @LastEditTime: 2023-12-27 21:12:42
+ * @FilePath: /learning-cryptology/ab/aes.h
  * @Description:
  *
  * Copyright (c) 2023 by goodpeanuts, All Rights Reserved.
@@ -339,14 +339,14 @@ public:
             printf("%02x ", a[i]);
     }
 
-    // 将数组转换为动态数组
+    // 将字符数组转换为动态数组
     static std::vector<unsigned char> array_to_vector(unsigned char *a, unsigned int len)
     {
         std::vector<unsigned char> v(a, a + len * sizeof(unsigned char));
         return v;
     }
 
-    // 将动态数组转换为数组
+    // 将动态数组转换为字符数组
     static unsigned char *vector_to_array(std::vector<unsigned char> &v)
     {
         return v.data();

@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-25 20:45:38
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 14:08:22
+ * @LastEditTime: 2023-12-27 15:52:29
  * @FilePath: /learning-cryptology/ab/md5.h
  * @Description: 
  * 
@@ -269,10 +269,11 @@ int getFileMD5(char *filename, char *dest)
 	return filelen;
 }
 
-void fileMD5(char *filename)
+char* fileMD5(char *filename)
 {
 	int filelen;
-	char md5_str[64] = {0};
+    // 防止变为悬垂指针
+	char* md5_str = new char[64]();
 	char cmd[256] = {0};
 
 	filelen = getFileMD5(filename, md5_str);
@@ -280,6 +281,7 @@ void fileMD5(char *filename)
 	{
 		printf("fileMD5 fail\n");
 	}
+    return md5_str;
 }
 
 char* strMd5(char *str)

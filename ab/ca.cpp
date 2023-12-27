@@ -2,11 +2,11 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-27 12:06:13
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 15:18:28
+ * @LastEditTime: 2023-12-27 20:34:42
  * @FilePath: /learning-cryptology/ab/ca.cpp
  * @Description: 数字签名和CA认证
- * 
- * Copyright (c) 2023 by goodpeanuts, All Rights Reserved. 
+ *
+ * Copyright (c) 2023 by goodpeanuts, All Rights Reserved.
  */
 #include <iostream>
 #include <cassert>
@@ -21,7 +21,7 @@ struct CA
     std::string id;
     std::string e;
     std::string n;
-    std::string hash;
+    std::string signature;
 };
 
 std::ostream &operator<<(std::ostream &os, const CA &ca)
@@ -30,7 +30,7 @@ std::ostream &operator<<(std::ostream &os, const CA &ca)
        << "[ID:] " << ca.id << "\n"
        << "[E:] " << ca.e << "\n"
        << "[N:] " << ca.n << "\n"
-       << "[Hash:] " << ca.hash;
+       << "[Signature:] " << ca.signature;
     return os;
 }
 
@@ -55,9 +55,9 @@ void parseInput(const std::string &input, CA &ca)
     pos2 = input.find("</n>");
     ca.n = input.substr(pos1, pos2 - pos1);
 
-    pos1 = input.find("<hash>") + 6;
-    pos2 = input.find("</hash>");
-    ca.hash = input.substr(pos1, pos2 - pos1);
+    pos1 = input.find("<signature>") + 11;
+    pos2 = input.find("</signature>");
+    ca.signature = input.substr(pos1, pos2 - pos1);
 }
 
 // 输出证书
@@ -69,7 +69,7 @@ std::string serializeOutput(const CA &ca)
     output += "<id>" + ca.id + "</id>";
     output += "<e>" + ca.e + "</e>";
     output += "<n>" + ca.n + "</n>";
-    output += "<hash>" + ca.hash + "</hash>";
+    output += "<signature>" + ca.signature + "</signature>";
 
     return output;
 }
@@ -96,6 +96,7 @@ CA bob = {"Bob", "0987654321", bob_e_str, bob_n_str, ""};
 // 发放证书
 void issueCertificate(CA &a)
 {
+    // 计算hash
     std::string toHash = a.name + a.id + a.e + a.n;
     std::cout << "[toHash:] " << toHash << std::endl;
     char *toHashCopy = new char[toHash.length() + 1];
@@ -105,16 +106,15 @@ void issueCertificate(CA &a)
 
     std::cout << "[证书Hash:] " << hash << std::endl;
 
-    // 计算hash
-    std::string hashStr = hash;
+    // 对hash签名
     CryptoPP::Integer d(ca_d_str.c_str());
     CryptoPP::Integer n(ca_n_str.c_str());
-    CryptoPP::Integer hashInt = RSA::encode_string(hashStr);
-
-    // 对hash签名
+    CryptoPP::Integer hashInt = RSA::encode_string(hash);
     CryptoPP::Integer signInt = a_exp_b_mod_c(hashInt, d, n);
+
+    // 将签名转换为字符串
     std::string signStr = RSA::decode_string(signInt);
-    a.hash = signStr;
+    a.signature = signStr;
 
     delete[] toHashCopy;
 }
@@ -122,6 +122,7 @@ void issueCertificate(CA &a)
 // 验证证书
 void verifyCertificate(const CA &a)
 {
+    // 计算hash
     std::string toHash = a.name + a.id + a.e + a.n;
     std::cout << "[toHash:] " << toHash << std::endl;
     char *toHashCopy = new char[toHash.length() + 1];
@@ -133,9 +134,11 @@ void verifyCertificate(const CA &a)
 
     // 验签
     CryptoPP::Integer e(ca_e_str.c_str());
-    CryptoPP::Integer signInt = RSA::encode_string(a.hash);
     CryptoPP::Integer n(ca_n_str.c_str());
+    CryptoPP::Integer signInt = RSA::encode_string(a.signature);
     CryptoPP::Integer hashInt = a_exp_b_mod_c(signInt, e, n);
+
+    // 将hash转换为字符串
     std::string desig = RSA::decode_string(hashInt);
     std::cout << "[解密Hash] " << desig << std::endl;
 
@@ -184,5 +187,29 @@ int main()
     std::cout << "======== 验证证书(bob) ========" << std::endl;
     verifyCertificate(bob);
 
+    // 将证书写入文件
+    std::cout << std::endl;
+    std::cout << "======== 将证书写入文件 ========" << std::endl;
+    std::ofstream fout;
+    fout.open("alice.txt");
+    fout << serializeOutput(alice);
+    fout.close();
+    fout.open("bob.txt");
+    int before = fout.tellp();
+    fout << serializeOutput(bob);
+    int after = fout.tellp();
+    fout.close();
+    std::cout << "Written " << after - before << " bytes to bob.txt" << std::endl;
+
+    // 读入bob
+    std::cout << std::endl;
+    std::cout << "======== 读入bob ========" << std::endl;
+    std::ifstream fin;
+    fin.open("bob.txt");
+    std::stringstream buffer;
+    buffer << fin.rdbuf();
+    std::string input = buffer.str();
+    fin.close();
+    std::cout << input.length() << std::endl;
     return 0;
 }
