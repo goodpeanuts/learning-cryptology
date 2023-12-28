@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 16:27:18
+ * @LastEditTime: 2023-12-28 19:05:22
  * @FilePath: /learning-cryptology/ab/alice.cpp
  * @Description:
  *
@@ -25,7 +25,7 @@
 #include "aes.h"
 #define PORT 55035
 #define BUFFER_SIZE 4096
-#define BUFFER_SIZE2 4194304
+#define BUFFER_SIZE2 4096
 using namespace std;
 
 // alice 的私钥
@@ -185,10 +185,14 @@ std::string generate_aes_key_iv(std::vector<unsigned char> &key, std::vector<uns
 // 加密对称密钥
 std::string encrypt_k(string in, CA target)
 {
+    cout << "===== target =====" << endl;
+    cout << target << endl;
     CryptoPP::Integer m = RSA::encode_string(in);
     CryptoPP::Integer e(target.e.c_str());
     CryptoPP::Integer n(target.n.c_str());
     CryptoPP::Integer c = a_exp_b_mod_c(m, e, n);
+    cout << "[n ]" << n << endl;
+    cout << "[e ]" << e << endl;
     cout << "加密前Int  " << m << endl;
     cout << "加密后Int  " << c << endl;
     string k = RSA::decode_string(c);
@@ -419,7 +423,7 @@ int main()
     cout << "    文件发送完成" << endl;
     cout << "---------------- \n"
          << endl;
-
+    cout << alice_n_str.length() << endl;   
     // 关闭套接字
     close(sock_client);
     return 0;
