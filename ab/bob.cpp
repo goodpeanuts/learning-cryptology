@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 10:51:13
+ * @LastEditTime: 2023-12-28 16:52:06
  * @FilePath: /learning-cryptology/ab/bob.cpp
  * @Description:
  *
@@ -20,7 +20,17 @@
 #include "aes.h"
 #define PORT 55035
 #define BUFFER_SIZE 4096
+#define BUFFER_SIZE2 4194304
 using namespace std;
+
+struct CA
+{
+    std::string name;
+    std::string id;
+    std::string e;
+    std::string n;
+    std::string signature;
+};
 
 // bob 的私钥
 const std::string bob_d_str = "389825748650402112134998776902132410583756908795024087245043139972646260814652967766179757895076724324424081908933719324919154409923680787019794127142845663790100570927209749852804608397958623395452952169718062102001696545990613220524183760279403876536863781906843189651452294462993098322137869373346135791091448839388316574504890237834041581893945918588079631728648275457986697040852588184736836642504611241090768420802545035238600480905724655482622424334110555423605804864582830596116980404501410937562352717408126311530533439228808772759197002211467039493127308998434626959947017724681616020520060415920226628755122652882473546780487130614676753627020633593753968285702644394044824964462378203844871726930362345321603050978034850474500806416129949564886007770370924795918777565288858625442883356775478699639526885200140642915200644477545201132310828772384876447734353091324631919532742491325384329582870476467670261397155965843344730475544353019635243976248058209043526254838295719296369854280595991011646450445420259065830297809196883680118510975487656614251893087536033739386752509345357240916292252008364627090718855213294454960957328525211782965794756090611820700899401134982007188441220621409380137164937884794665026664870849";
@@ -33,7 +43,7 @@ const std::string ca_e_str = "48230234972912824395842558097639002513568074476425
 const std::string ca_n_str = "619602684616718133248166089597571487511277402914611620850125903424668688104687670617378588775835487311063258626548554081827812655925357694818063993928526158345239445898782939091939534158590104237602533025009702708312473083110552254979005350786410296624529923063440890284652345112272600681355857616730143146815018336562190721398854580071921151308489054038089831835855652447214604080474324413176928326486156913321758465185674780798384482836956528975868405845522525584348905831801107722404011544272835142084995828581965045114648892493671003801328310152648415556547166218496006151999501918778575259950301418580325847216333782171847192858517438607670864898944012265229831003226596417986859654041555237089012297250957831824506518898039849667441035198614256630307837962864485936438192773058171655684737474296652245829932551480504038519905494148852150387567449487862996399079029669341374317456363373157341294071261687446233389489525278305797441376350202598176868140794246405466660433438702380961687906758250650466175257003880442503576664576169994242705332173013315618901593667359420965063396903165950548639725829800214737507511974963928624712688275462581538292339732451089219745284674444592936397213730800316583112799882291891921182659058507";
 
 // 解密对称密钥
-std::string decryptKey(const std::string &in)
+std::string decrypt_rsa_bob(const std::string &in)
 {
     CryptoPP::Integer c = RSA::encode_string(in);
     CryptoPP::Integer n(bob_n_str.c_str());
@@ -76,10 +86,8 @@ std::string deString(const std::vector<unsigned char> &k, const std::vector<unsi
     return out_str;
 }
 
-void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, string filename)
+void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, string filename, std::string output_filename)
 {
-    std::string output_filename = "x.mkv";
-
     std::vector<unsigned char> in{};
     std::vector<unsigned char> out{};
 
@@ -90,11 +98,11 @@ void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned c
     std::ifstream input_file(filename, std::ios::binary);
     std::ofstream output_file(output_filename, std::ios::binary);
 
-    char *buffer = new char[BUFFER_SIZE];
+    char *buffer = new char[BUFFER_SIZE2];
 
     while (true)
     {
-        input_file.read(buffer, BUFFER_SIZE);
+        input_file.read(buffer, BUFFER_SIZE2);
         std::streamsize size = input_file.gcount();
         std::cout << "解密大小: " << size << std::endl;
         if (size == 0)
@@ -102,7 +110,7 @@ void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned c
             break;
         }
         in.assign(buffer, buffer + size);
-        if (size < BUFFER_SIZE)
+        if (size < BUFFER_SIZE2)
         {
             out = aes.decrypt_CFB(in, k, iv, true);
         }
@@ -118,6 +126,70 @@ void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned c
     output_file.close();
 }
 
+// 读取证书
+void parseInput(const std::string &input, CA &ca)
+{
+    size_t pos1, pos2;
+
+    pos1 = input.find("<name>") + 6;
+    pos2 = input.find("</name>");
+    ca.name = input.substr(pos1, pos2 - pos1);
+
+    pos1 = input.find("<id>") + 4;
+    pos2 = input.find("</id>");
+    ca.id = input.substr(pos1, pos2 - pos1);
+
+    pos1 = input.find("<e>") + 3;
+    pos2 = input.find("</e>");
+    ca.e = input.substr(pos1, pos2 - pos1);
+
+    pos1 = input.find("<n>") + 3;
+    pos2 = input.find("</n>");
+    ca.n = input.substr(pos1, pos2 - pos1);
+
+    pos1 = input.find("<signature>") + 11;
+    pos2 = input.find("</signature>");
+    ca.signature = input.substr(pos1, pos2 - pos1);
+    // assert(ca.signature.length() == 512);
+}
+
+// 验证证书
+void verifyCertificate(const CA &a)
+{
+    // 计算hash
+    std::string toHash = a.name + a.id + a.e + a.n;
+    std::cout << "[toHash:] " << toHash << std::endl;
+    char *toHashCopy = new char[toHash.length() + 1];
+    std::strcpy(toHashCopy, toHash.c_str());
+    char *hashCStr = strMd5(toHashCopy);
+    std::string hash(hashCStr);
+
+    std::cout << "[证书Hash:] " << hash << std::endl;
+
+    // 验签
+    CryptoPP::Integer e(ca_e_str.c_str());
+    CryptoPP::Integer n(ca_n_str.c_str());
+    CryptoPP::Integer signInt = RSA::encode_string(a.signature);
+    CryptoPP::Integer hashInt = a_exp_b_mod_c(signInt, e, n);
+
+    // 将hash转换为字符串
+    std::string desig = RSA::decode_string(hashInt);
+    std::cout << "[解密Hash] " << desig << std::endl;
+
+    if (desig == hash)
+    {
+        std::cout << std::endl;
+        std::cout << "======= [验证成功] =======" << std::endl;
+    }
+    else
+    {
+        std::cout << std::endl;
+        std::cout << "####### [验证失败] #######" << std::endl;
+    }
+    assert(desig == hash);
+    delete[] toHashCopy;
+}
+
 // 发给客户端的信息
 char msg[] = "TCP连接成功，我是Bob";
 
@@ -128,6 +200,7 @@ int main()
     struct sockaddr_in addr;
     struct sockaddr_in client_addr;
     char buffer[BUFFER_SIZE];
+    size_t msg_len{};
 
     // 设置服务端套接字,使用IPv4地址族,TCP协议
     // 接受所有网络地址的连接申请
@@ -150,11 +223,11 @@ int main()
     {
         cout << "【Bob上线】\n";
 
-        // 接收连接请求
+        /***************   1.建立连接  *********************/
         newsock = accept(sock_server, (struct sockaddr *)&client_addr, (socklen_t *)&addr_len);
         cout << "【成功建立连接】\n";
 
-        // 与客户端建立连接
+        /***************   2.打招呼  *********************/
         int ret1_hello = send(newsock, msg, sizeof(msg), 0);
         if (ret1_hello == -1)
         {
@@ -163,8 +236,11 @@ int main()
             continue;
         }
 
-        // 接收 key_iv
-        int ret2_key = recv(newsock, buffer, sizeof(buffer), 0);
+        /***************  3.接收密钥  *********************/
+        recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
+        memset(buffer, 0, sizeof(buffer));
+
+        int ret2_key = recv(newsock, buffer, msg_len, 0);
         if (ret2_key == -1)
         {
             perror("【接收 key 失败】\n");
@@ -173,7 +249,7 @@ int main()
         }
         string k(buffer, ret2_key);
         std::cout << k.length() << std::endl;
-        string key_iv_str = decryptKey(k);
+        string key_iv_str = decrypt_rsa_bob(k);
         cout << "【接收 key 成功】\n";
 
         // 将 key_iv_str 转换为 vector
@@ -202,74 +278,103 @@ int main()
         }
         std::cout << std::endl;
 
-        // 接受sig
+        /***************  4.接收en_sig  *********************/
+        recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
         memset(buffer, 0, sizeof(buffer));
-        ssize_t ret3_sig = recv(newsock, buffer, sizeof(buffer), 0);
+
+        int ret3_sig = recv(newsock, buffer, msg_len, 0);
         if (ret3_sig == -1)
         {
-            perror("【接收 sig 失败】\n");
+            perror("【接收 sig 失败】");
             close(newsock);
             continue;
         }
         string en_sig(buffer, ret3_sig);
-        cout << "[en_sig len]" << ret3_sig << std::endl; 
         std::cout << "[sig len:]" << en_sig.length() << std::endl;
+
+        cout << "#### [解密sig] #####\n"
+             << endl;
         std::string sig = deString(key, iv, en_sig);
-
-        // 解密文件
-        // buffer_de(key, iv, "alice_mid.aes");
-
-        // 计算文件hash
-        // char *hash = fileMD5("x.mkv");
-        // std::string hash_str(hash);
-        // delete[] hash;
 
         // 接收服务端将发送的文件的大小
         streampos fileSize;
-        size_t size = recv(newsock, (char *)&fileSize, sizeof(fileSize), 0);
+        int size = recv(newsock, (char *)&fileSize, sizeof(fileSize), 0);
         if (size == 0)
         {
+            cout << "[ size ]" << size << endl;
             cout << "    与alice断开连接\n";
             close(newsock);
             return 0;
         }
         else
         {
-            cout << "    接收到的文件大小为 :  " << fileSize << " bytes" << endl;
+            cout << " 接收到的文件大小为:  " << fileSize << " bytes" << endl;
         }
 
-        // // 创建文件
-        // ofstream file("i.txt", ios::binary);
+        // 创建文件
+        ofstream file("bob_recv_aes", ios::binary);
+        // ofstream file;
 
-        // // 接收文件内容
-        // int remainingSize = fileSize;
-        // while (remainingSize > 0)
-        // {
-        //     size = recv(newsock, buffer, min(remainingSize, BUFFER_SIZE), 0);
-        //     if (size == 0)
-        //     {
-        //         cout << "    对方已关闭连接！\n";
-        //         break;
-        //     }
-        //     else if (size == -1)
-        //     {
-        //         cout << "    接收文件内容失败\n";
-        //         break;
-        //     }
-        //     else
-        //     {
-        //         file.write(buffer, size);
-        //         remainingSize -= size;
-        //     }
-        // }
+        // 接收文件内容
+        int remainingSize = fileSize;
+        while (remainingSize > 0)
+        {
+            size = recv(newsock, buffer, min(remainingSize, BUFFER_SIZE), 0);
+            if (size <= 0)
+                perror("接收文件失败");
+            else
+            {
+                file.write(buffer, size);
+                remainingSize -= size;
+            }
+        }
 
-        // file.close();
-        // cout << "    文件接收完成,保存为:  received_"  << endl;
+        file.close();
+        cout << "文件接收完成" << endl;
+
+        // 解密文件
+        buffer_de(key, iv, "alice_mid_aes", "x.mkv");
+
+        /***************  5.接收加密证书  *********************/
+        recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
+        memset(buffer, 0, sizeof(buffer));
+
+        int ret4_cert = recv(newsock, buffer, msg_len, 0);
+        if (ret4_cert == -1)
+        {
+            perror("【接收 cert 失败】");
+            close(newsock);
+            continue;
+        }
+        string en_cert(buffer, ret4_cert);
+        cout << "[en_cert len]" << ret4_cert << std::endl;
+        std::cout << "[cert len:]" << en_cert.length() << std::endl;
+
+        std::string cert = deString(key, iv, en_cert);
+
+        // 解析证书
+        CA ca;
+        parseInput(cert, ca);
+        // 验证证书
+        verifyCertificate(ca);
+
+        CryptoPP::Integer e(ca.e.c_str());
+        CryptoPP::Integer n(ca.n.c_str());
+        CryptoPP::Integer signInt = RSA::encode_string(sig);
+        CryptoPP::Integer hashInt = a_exp_b_mod_c(signInt, e, n);
+        string sig_str = RSA::decode_string(hashInt);
+
+        /***************  6.验证文件hash  *********************/
+        char *hash = fileMD5("x.mkv");
+        std::string hash_str(hash);
+        delete[] hash;
+
+        cout << "[alice hash: ]" << hash_str << endl;
+        cout << "[bob hash: ]" << sig_str << endl;
 
         // 发送完成,结束本次TCP连接
         close(newsock);
     }
-
     // 关闭套接字
     close(sock_server);
     return 0;
