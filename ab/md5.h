@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-25 20:45:38
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 15:52:29
+ * @LastEditTime: 2023-12-28 20:44:04
  * @FilePath: /learning-cryptology/ab/md5.h
  * @Description: 
  * 
@@ -263,7 +263,7 @@ int getFileMD5(char *filename, char *dest)
 	}
 	strcpy(dest, reinterpret_cast<const char*>(decrypt32));
 
-	printf("md5:%s len=%d\n", dest, filelen);
+	printf("md5:%s \n", dest);
 	close(fdf);
 
 	return filelen;

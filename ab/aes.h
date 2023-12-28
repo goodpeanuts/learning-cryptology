@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:38:23
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 21:12:42
+ * @LastEditTime: 2023-12-28 22:44:50
  * @FilePath: /learning-cryptology/ab/aes.h
  * @Description:
  *
@@ -487,7 +487,6 @@ public:
                                            std::vector<unsigned char> key,
                                            std::vector<unsigned char> iv)
     {
-        std::cout << "输入长度: " << in.size() << std::endl;
         if (in.size() % blockByteslen != 0)
         {
             std::cout << "输入长度不是16的倍数" << std::endl;
@@ -557,11 +556,9 @@ public:
         unsigned int outLen{};
         unsigned char *out = decrypt_CFB(vector_to_array(in), (unsigned int)in.size(),
                                          vector_to_array(key), vector_to_array(iv), outLen, final);
-        std::cout << "输出长度: " << outLen << std::endl;
         std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
         delete[] out;
         v.resize(outLen);
-        std::cout << "v.size(): " << v.size() << std::endl;
         return v;
     }
 };

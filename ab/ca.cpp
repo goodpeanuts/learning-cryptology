@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-27 12:06:13
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 17:54:56
+ * @LastEditTime: 2023-12-28 22:09:59
  * @FilePath: /learning-cryptology/ab/ca.cpp
  * @Description: 数字签名和CA认证
  *
@@ -130,7 +130,7 @@ void verifyCertificate(const CA &a)
     char *hashCStr = strMd5(toHashCopy);
     std::string hash(hashCStr);
 
-    std::cout << "[证书Hash:] " << hash << std::endl;
+    std::cout << "[证书Hash] " << hash << std::endl;
 
     // 验签
     CryptoPP::Integer e(ca_e_str.c_str());

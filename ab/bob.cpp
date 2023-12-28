@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 19:04:29
+ * @LastEditTime: 2023-12-28 23:27:17
  * @FilePath: /learning-cryptology/ab/bob.cpp
  * @Description:
  *
@@ -20,7 +20,7 @@
 #include "aes.h"
 #define PORT 55035
 #define BUFFER_SIZE 4096
-#define BUFFER_SIZE2 4096
+#define BUFFER_SIZE2 8388608
 using namespace std;
 
 struct CA
@@ -52,8 +52,6 @@ const std::string ca_e_str = "48230234972912824395842558097639002513568074476425
 
 const std::string ca_n_str = "619602684616718133248166089597571487511277402914611620850125903424668688104687670617378588775835487311063258626548554081827812655925357694818063993928526158345239445898782939091939534158590104237602533025009702708312473083110552254979005350786410296624529923063440890284652345112272600681355857616730143146815018336562190721398854580071921151308489054038089831835855652447214604080474324413176928326486156913321758465185674780798384482836956528975868405845522525584348905831801107722404011544272835142084995828581965045114648892493671003801328310152648415556547166218496006151999501918778575259950301418580325847216333782171847192858517438607670864898944012265229831003226596417986859654041555237089012297250957831824506518898039849667441035198614256630307837962864485936438192773058171655684737474296652245829932551480504038519905494148852150387567449487862996399079029669341374317456363373157341294071261687446233389489525278305797441376350202598176868140794246405466660433438702380961687906758250650466175257003880442503576664576169994242705332173013315618901593667359420965063396903165950548639725829800214737507511974963928624712688275462581538292339732451089219745284674444592936397213730800316583112799882291891921182659058507";
 
-const std::string alice_n_str = "579522468003058243993239718950711828500800749483577015429778065585043322873845982071284241150570367240755757029946959066571184411169766879234411047738154614362624231684848620979103805672910179736584815175517516924302006013577345525960267375378910249948358897175136227037095486748949371319105108888443645487166106677051165039985747428048143395159785162003610378281176670853681513423438724167721882099664216826247372819935724637013384717211914648415523188145358488874264426730418904258325424425927206901995811469019304499772781738016264778391642320236296292511692819568519068440644315519902509583506918576434426698938066133050353875506811860489411748932283886586747829955004674421553589305482396067109198865928635151892115955919165180712917957001470653115500769693295449245503918383677533432638802567192742450022596394344588691736551043591478947915020898572918614992062853797658233981443990019780382205282819066445767247097462193827555395633596968943860424115713638084962527519600866309506161169879272466594965920660279975116978823523822413096445435487121033286857118016309144418414699423056420427297625960588727329613160040048426043050130108980369419504037944766627814048677372966151817913803208942937954209562410731831288541256408699";
-
 // 解密对称密钥
 std::string decrypt_rsa_bob(const std::string &in)
 {
@@ -70,29 +68,15 @@ std::string deString(const std::vector<unsigned char> &k, const std::vector<unsi
     std::vector<unsigned char> in{};
     std::vector<unsigned char> out{};
 
-    std::cout << "=========== 字符串解密 ===========" << std::endl;
+    std::cout << "[字符串解密]" << std::endl;
 
     in.assign(input.begin(), input.end());
     out.assign(input.begin(), input.end());
-
-    // 解密前
-    std::cout << "解密前: " << std::endl;
-    for (auto i : in)
-    {
-        std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
 
     AES aes(AESMode::AES_128);
 
     // 由于输入的hash值刚好是aes分组倍数，解密时不要去补位
     out = aes.decrypt_CFB(in, k, iv, false);
-    std::cout << "解密结果: " << std::endl;
-    for (auto i : out)
-    {
-        std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
     // out转string
     std::string out_str(out.begin(), out.end());
     return out_str;
@@ -103,12 +87,14 @@ void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned c
     std::vector<unsigned char> in{};
     std::vector<unsigned char> out{};
 
-    std::cout << "=========== 大文件解密 ===========" << std::endl;
+    std::cout << "[文件解密]" << std::endl;
 
     AES aes(AESMode::AES_128);
 
     std::ifstream input_file(filename, std::ios::binary);
     std::ofstream output_file(output_filename, std::ios::binary);
+    cout << "[文件名] " << filename << endl;
+    cout << "[输出文件名] " << output_filename << endl;
 
     char *buffer = new char[BUFFER_SIZE2];
 
@@ -190,8 +176,7 @@ void verifyCertificate(const CA &a)
 
     if (desig == hash)
     {
-        std::cout << std::endl;
-        std::cout << "======= [验证成功] =======" << std::endl;
+        std::cout << "\033[32m[Alice 证书验证成功] \n\033[0m" << std::endl;
     }
     else
     {
@@ -207,14 +192,9 @@ std::string verify_file_hash_sig(std::string sig_str, const CA &target)
 {
     CryptoPP::Integer e(target.e.c_str());
     CryptoPP::Integer n(target.n.c_str());
-    cout << "[ca.e: ]" << target.e.c_str() << endl;
-    cout << "[e ]" << e << endl;
-    cout << "[ca.n: ]" << target.n.c_str() << endl;
-    cout << "[n ]" << n << endl;
     CryptoPP::Integer signInt = RSA::encode_string(sig_str);
     CryptoPP::Integer hashInt = a_exp_b_mod_c(signInt, e, n);
     string sig = RSA::decode_string(hashInt);
-
     return sig;
 }
 
@@ -223,47 +203,51 @@ char msg[] = "TCP连接成功，我是Bob";
 
 int main()
 {
-    // 建立流式套接字,分别为服务端和新连接
+    /***************   网络传输初始化  ***************/
     int sock_server, newsock;
     struct sockaddr_in addr;
     struct sockaddr_in client_addr;
     char buffer[BUFFER_SIZE];
     size_t msg_len{};
 
-    // 设置服务端套接字,使用IPv4地址族,TCP协议
-    // 接受所有网络地址的连接申请
     sock_server = socket(AF_INET, SOCK_STREAM, 0);
     int addr_len = sizeof(struct sockaddr_in);
     memset((void *)&addr, 0, addr_len);
     addr.sin_family = AF_INET;
     addr.sin_port = htons(PORT);
     addr.sin_addr.s_addr = inet_addr("0.0.0.0");
-
-    // 监听套接字绑定地址
     bind(sock_server, (struct sockaddr *)&addr, sizeof(addr));
-
-    // 监听客户的连接请求
     listen(sock_server, 0);
-    // 接收连接请求并收发数据
-    // 程序会一直循环执行,持续监听客户端连接和进行数据交互，
-    // 直到手动停止程序
+
     while (true)
     {
-        cout << "【Bob上线】\n";
+        cout << "[Bob上线]\n";
 
-        /***************   1.建立连接  *********************/
+        /***************   1.接收连接  *********************/
         newsock = accept(sock_server, (struct sockaddr *)&client_addr, (socklen_t *)&addr_len);
-        cout << "【成功建立连接】\n";
+        cout << "\033[32m[建立连接]\n\033[0m";
 
-        /***************   2.打招呼  *********************/
+        /***************   2.建立TCP连接  *********************/
         int ret1_hello = send(newsock, msg, sizeof(msg), 0);
         if (ret1_hello == -1)
         {
-            perror("【连接失败】\n");
+            perror("[连接失败]\n");
             close(newsock);
             continue;
         }
+        string filename;
+        // 接收文件名
+        recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
+        memset(buffer, 0, sizeof(buffer));
 
+        int ret1_filename = recv(newsock, buffer, msg_len, 0);
+        if (ret1_filename == -1)
+        {
+            perror("[接收失败]\n");
+            close(newsock);
+            continue;
+        }
+        filename = string(buffer, ret1_filename);
         /***************  3.接收密钥  *********************/
         recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
         memset(buffer, 0, sizeof(buffer));
@@ -271,14 +255,13 @@ int main()
         int ret2_key = recv(newsock, buffer, msg_len, 0);
         if (ret2_key == -1)
         {
-            perror("【接收 key 失败】\n");
+            perror("[接收 key 失败]\n");
             close(newsock);
             continue;
         }
         string k(buffer, ret2_key);
-        std::cout << k.length() << std::endl;
         string key_iv_str = decrypt_rsa_bob(k);
-        cout << "【接收 key 成功】\n";
+        cout << "\033[32m[接收 key 成功]\n\033[0m";
 
         // 将 key_iv_str 转换为 vector
         vector<unsigned char> key;
@@ -293,7 +276,7 @@ int main()
         }
 
         // 输出key 和 iv
-        std::cout << "[recv_key: ]";
+        std::cout << "[recv_key:] ";
         for (auto i : key)
         {
             std::cout << std::hex << static_cast<int>(i);
@@ -306,41 +289,36 @@ int main()
         }
         std::cout << std::endl;
 
-        /***************  4.接收en_sig  *********************/
+        /***************  4.接收文件hash的签名  *******************/
         recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
         memset(buffer, 0, sizeof(buffer));
 
         int ret3_sig = recv(newsock, buffer, msg_len, 0);
         if (ret3_sig == -1)
         {
-            perror("【接收 sig 失败】");
+            perror("[接收 sig 失败]");
             close(newsock);
             continue;
         }
         string en_sig(buffer, ret3_sig);
-        std::cout << "[sig len:]" << en_sig.length() << std::endl;
+        std::cout << "\033[32m[接收签名成功]\033[0m" << std::endl;
 
-        cout << "#### [解密sig] #####\n"
-             << endl;
+        // 解密签名
         std::string sig = deString(key, iv, en_sig);
 
+        /***************  5.接收加密文件  *********************/
         // 接收服务端将发送的文件的大小
         streampos fileSize;
         int size = recv(newsock, (char *)&fileSize, sizeof(fileSize), 0);
-        if (size == 0)
+        if (size <= 0)
         {
-            cout << "[ size ]" << size << endl;
-            cout << "    与alice断开连接\n";
+            perror("[与alice断开连接]");
             close(newsock);
             return 0;
         }
-        else
-        {
-            cout << " 接收到的文件大小为:  " << fileSize << " bytes" << endl;
-        }
 
         // 创建文件
-        ofstream file("bob_recv_aes", ios::binary);
+        ofstream file("aes", ios::binary);
         // ofstream file;
 
         // 接收文件内容
@@ -358,25 +336,24 @@ int main()
         }
 
         file.close();
-        cout << "文件接收完成" << endl;
+        cout << "\033[32m[文件接收完成]\033[0m" << endl;
 
         // 解密文件
-        buffer_de(key, iv, "alice_mid_aes", "x.mkv");
+        buffer_de(key, iv, "aes", filename);
 
-        /***************  5.接收加密证书  *********************/
+        /***************  6.接收alice加密证书  *********************/
         recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);
         memset(buffer, 0, sizeof(buffer));
 
         int ret4_cert = recv(newsock, buffer, msg_len, 0);
         if (ret4_cert == -1)
         {
-            perror("【接收 cert 失败】");
+            perror("[接收 cert 失败]");
             close(newsock);
             continue;
         }
         string en_cert(buffer, ret4_cert);
-        cout << "[en_cert len]" << ret4_cert << std::endl;
-        std::cout << "[cert len:]" << en_cert.length() << std::endl;
+        std::cout << "[证书长度:]" << en_cert.length() << std::endl;
 
         std::string cert = deString(key, iv, en_cert);
 
@@ -386,24 +363,21 @@ int main()
         // 验证证书
         verifyCertificate(ca);
 
-        // cout << "[ca ]" <<  ca << endl;
-
-        /***************  6.验证文件hash  *********************/
-        char *hash = fileMD5("x.mkv");
+        /***************  7.验证文件hash  *********************/
+        cout << "[filename] "<< filename << endl;
+        int length = std::strlen(filename.c_str());
+        char *filename_copy = new char[length + 1];
+        std::strcpy(filename_copy, filename.c_str());
+        char *hash = fileMD5(filename_copy);
         std::string hash_str(hash);
+        delete[] filename_copy;
         delete[] hash;
 
-        cout << "==== [验证文件hash] ====\n";
-        cout << "[alice hash: ]" << hash_str << endl;
-        cout << "[bob hash: ]\n"
-             << verify_file_hash_sig(sig, ca) << endl;
+        verify_file_hash_sig(sig, ca);
+        cout << "[alice hash:] " << hash_str << endl;
+        cout << "\033[32m[接收成功]\n\033[0m";
+        cout << "------------------------- \n\n";
 
-        CryptoPP::Integer bob_d(bob_d_str.c_str());
-        CryptoPP::Integer bob_n(bob_n_str.c_str());
-        cout << "\nbob_d: " << bob_d << endl;
-        cout << "\n[d_str]" << bob_d_str << endl;
-        cout << "\nbob_n: " << bob_n << endl;
-        cout << "\n[n_str]" << bob_n_str << endl;
         // 发送完成,结束本次TCP连接
         close(newsock);
     }

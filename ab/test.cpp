@@ -17,7 +17,7 @@ const std::string bob_n_str = "4564462337421968042129027522669368328521253943407
 
 int main()
 {
-    CryptoPP::Integer bob_d(bob_d_str.c_str());
+    CryptoPP::Integer bob_d("1232456");
     CryptoPP::Integer bob_n(bob_n_str.c_str());
     cout << "\nbob_d: " << bob_d << endl;
     cout << "\n[d_str]" << bob_d_str << endl;

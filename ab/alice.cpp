@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 19:05:22
+ * @LastEditTime: 2023-12-28 23:19:29
  * @FilePath: /learning-cryptology/ab/alice.cpp
  * @Description:
  *
@@ -25,7 +25,7 @@
 #include "aes.h"
 #define PORT 55035
 #define BUFFER_SIZE 4096
-#define BUFFER_SIZE2 4096
+#define BUFFER_SIZE2 8388608
 using namespace std;
 
 // alice 的私钥
@@ -89,13 +89,13 @@ void verifyCertificate(const CA &a)
 {
     // 计算hash
     std::string toHash = a.name + a.id + a.e + a.n;
-    std::cout << "[toHash:] " << toHash << std::endl;
+    std::cout << "[toHash] " << toHash << std::endl;
     char *toHashCopy = new char[toHash.length() + 1];
     std::strcpy(toHashCopy, toHash.c_str());
     char *hashCStr = strMd5(toHashCopy);
     std::string hash(hashCStr);
 
-    std::cout << "[证书Hash:] " << hash << std::endl;
+    std::cout << "[证书Hash] " << hash << std::endl;
 
     // 验签
     CryptoPP::Integer e(ca_e_str.c_str());
@@ -105,12 +105,12 @@ void verifyCertificate(const CA &a)
 
     // 将hash转换为字符串
     std::string desig = RSA::decode_string(hashInt);
-    std::cout << "[解密Hash] " << desig << std::endl;
+    std::cout << "[解密Hash] " << desig;
 
     if (desig == hash)
     {
         std::cout << std::endl;
-        std::cout << "======= [验证成功] =======" << std::endl;
+        std::cout << "\033[32m[ Bob 证书验证成功] \n\033[0m" << std::endl;
     }
     else
     {
@@ -121,10 +121,14 @@ void verifyCertificate(const CA &a)
     delete[] toHashCopy;
 }
 // 计算文件hash并签名
-std::string get_file_hash_sig(char *filename)
+std::string get_file_hash_sig(const char *filename)
 {
-    char *hash = fileMD5(filename);
+    int length = std::strlen(filename);
+    char *filename_copy = new char[length + 1];
+    std::strcpy(filename_copy, filename);
+    char *hash = fileMD5(filename_copy);
     std::string hash_str(hash);
+    delete[] filename_copy;
     delete[] hash;
 
     // 对hash签名
@@ -143,7 +147,8 @@ CA parse_cert(const char *cert_name)
 {
     // 读入证书
     std::cout << std::endl;
-    std::cout << "======== 读入证书 ========" << std::endl;
+    std::cout << "\n\033[33m[读入 Bob 证书]\033[0m"
+              << std::endl;
     std::ifstream fin;
     fin.open(cert_name);
     std::stringstream buffer;
@@ -185,18 +190,11 @@ std::string generate_aes_key_iv(std::vector<unsigned char> &key, std::vector<uns
 // 加密对称密钥
 std::string encrypt_k(string in, CA target)
 {
-    cout << "===== target =====" << endl;
-    cout << target << endl;
     CryptoPP::Integer m = RSA::encode_string(in);
     CryptoPP::Integer e(target.e.c_str());
     CryptoPP::Integer n(target.n.c_str());
     CryptoPP::Integer c = a_exp_b_mod_c(m, e, n);
-    cout << "[n ]" << n << endl;
-    cout << "[e ]" << e << endl;
-    cout << "加密前Int  " << m << endl;
-    cout << "加密后Int  " << c << endl;
     string k = RSA::decode_string(c);
-    std::cout << "[k_len]" << k.length() << std::endl;
     return k;
 }
 
@@ -207,39 +205,25 @@ std::string enString(const std::vector<unsigned char> &k, const std::vector<unsi
     std::vector<unsigned char> in{};
     std::vector<unsigned char> out{};
 
-    std::cout << "=========== 字符串加密 ===========" << std::endl;
+    std::cout << "\n[字符串加密]" << std::endl;
 
     in.assign(input.begin(), input.end());
     out.assign(input.begin(), input.end());
 
-    // 加密前
-    std::cout << "加密前: " << std::endl;
-    for (auto i : in)
-    {
-        std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
-
     AES aes(AESMode::AES_128);
     out = aes.encrypt_CFB(in, k, iv);
-    std::cout << "加密结果: " << std::endl;
-    for (auto i : out)
-    {
-        std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
     // out转string
     std::string out_str(out.begin(), out.end());
     return out_str;
-
 }
 
+// 文件加密
 void buffer_en(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, string input_filename, std::string output_name)
 {
     std::vector<unsigned char> in{};
     std::vector<unsigned char> out{};
 
-    std::cout << "=========== 大文件加密 ===========" << std::endl;
+    std::cout << "[文件加密]" << std::endl;
 
     AES aes(AESMode::AES_128);
 
@@ -269,50 +253,61 @@ void buffer_en(const std::vector<unsigned char> &k, const std::vector<unsigned c
 
 int main()
 {
-    // 建立客户端流式套接字
+    string filename;
+    std::cout << "请输入要发送的文件名: ";
+    std::cin >> filename;
+    /***************   网络传输初始化  ***************/
     int sock_client;
     struct sockaddr_in server_addr;
     int addr_len = sizeof(struct sockaddr_in);
     char buffer[BUFFER_SIZE];
     size_t msg_len{};
 
-    // 设置客户端套接字,使用IPv4地址族,TCP协议
-    // 事先设定服务器地址 130.33.40.2
     sock_client = socket(AF_INET, SOCK_STREAM, 0);
     memset((void *)&server_addr, 0, addr_len);
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); // 填写Bob的IP地址
+    server_addr.sin_addr.s_addr = inet_addr("192.168.13.150");
 
-    /***************   1.连接Bob  *********************/
+    /*************   0.读取bob证书并验证  ****************/
+    CA target = parse_cert("bob.txt");
+
+    /***************   1.发起连接  *********************/
     if (connect(sock_client, (struct sockaddr *)&server_addr, addr_len) == -1)
     {
-        perror("connect failed");
+        perror("### 连接失败 ###\n");
         close(sock_client);
         return -1;
     }
 
-    /***************   2.接受回应  *********************/
+    /***************   2.建立TCP连接  *********************/
     int ret1_hello = recv(sock_client, buffer, BUFFER_SIZE, 0);
     if (ret1_hello == 0 || ret1_hello == -1)
     {
-        perror("【连接失败】\n");
+        perror("[连接失败]\n");
         close(sock_client);
         return -1;
     }
+    // 发送文件名
+    msg_len = filename.length();
+    send(sock_client, (char *)&msg_len, sizeof(msg_len), 0);
 
-    std::string file_sig = get_file_hash_sig("1.txt");
-    CA target = parse_cert("bob.txt");
+    if (send(sock_client, filename.c_str(), filename.length(), 0) == -1)
+    {
+        perror("### 发送文件名失败 ###");
+        close(sock_client);
+        return 0;
+    }
 
+    /***************  3.发送密钥  *********************/
     // 初始化aes key 和 iv
     std::vector<unsigned char> key{};
     std::vector<unsigned char> iv{};
-    // 生成key 和 iv
+
+    // 生成随机key 和 iv
     std::string key_iv_str = generate_aes_key_iv(key, iv);
     std::string k = encrypt_k(key_iv_str, target);
-    cout << "[k len2] " << k.length() << endl;
 
-    /***************  3.发送密钥  *********************/
     msg_len = k.length();
     send(sock_client, (char *)&msg_len, sizeof(msg_len), 0);
 
@@ -322,8 +317,8 @@ int main()
         close(sock_client);
         return 0;
     }
-
-    std::cout << "[gen_key: ]";
+    cout << "\033[33m[生成随机密钥]\n\033[0m";
+    std::cout << "[gen_key: ] ";
     for (auto i : key)
     {
         std::cout << std::hex << static_cast<int>(i);
@@ -336,31 +331,38 @@ int main()
     }
     std::cout << std::endl;
 
+    /************  4.发送对文件hash值签名  ****************/
+    // 计算文件hash并签名
+    std::string file_sig = get_file_hash_sig(filename.c_str());
+
+    // 对称加密hash
+    cout << "\033[33m[对文件hash签名]\033[0m";
     std::string en_sig = enString(key, iv, file_sig);
-    /***************  4.发送en_sig  *********************/
     msg_len = en_sig.length();
     send(sock_client, (char *)&msg_len, sizeof(msg_len), 0);
 
-    cout << "[en_sig_len]" << en_sig.length() << endl;
     if (send(sock_client, en_sig.c_str(), en_sig.length(), 0) == -1)
     {
         std::cout << "发送失败\n";
         close(sock_client);
         return 0;
     }
+
+    cout << "\033[32m[文件签名发送成功]\n\033[0m";
+
+    /***************  5.发送加密文件  *********************/
+    cout << "\033[33m[发送加密文件]\n\033[0m";
     // 加密文件
-    buffer_en(key, iv, "q.mkv", "alice_mid_aes");
+    buffer_en(key, iv, filename, "aes");
 
     // 发送文件
-    ifstream file("alice_mid_aes", ios::binary | ios::ate);
+    ifstream file("aes", ios::binary | ios::ate);
     if (!file)
     {
         perror("### 无法打开文件 ###");
         close(sock_client);
         return -1;
     }
-
-    /***************  5.发送加密文件  *********************/
     streampos fileSize = file.tellg();
     file.seekg(0, ios::beg);
 
@@ -372,8 +374,6 @@ int main()
         close(sock_client);
         return -1;
     }
-    cout << "[filesize ] " << fileSize << endl;
-    cout << "发送文件大小,成功" << endl;
 
     // 发送文件内容
     while (fileSize > 0)
@@ -395,8 +395,10 @@ int main()
             fileSize -= size;
         }
     }
+    cout << "\033[32m[文件发送成功]\n\033[0m";
 
-    /***************  5.发送加密证书  *********************/
+    /***************  6.发送加密的alice证书  *********************/
+    cout << "\033[33m[发送 alice 证书]\033[0m";
     std::ifstream cert_file("alice.txt");
     if (!cert_file)
     {
@@ -411,7 +413,6 @@ int main()
 
     msg_len = en_cert.length();
     send(sock_client, (char *)&msg_len, sizeof(msg_len), 0);
-    cout << "[en_cert_len]" << en_cert.length() << endl;
 
     if (send(sock_client, en_cert.c_str(), en_cert.length(), 0) == -1)
     {
@@ -420,10 +421,9 @@ int main()
         return 0;
     }
 
-    cout << "    文件发送完成" << endl;
-    cout << "---------------- \n"
+    cout << "\033[32m[传输成功]\n\033[0m";
+    cout << "------------------------- \n\n"
          << endl;
-    cout << alice_n_str.length() << endl;   
     // 关闭套接字
     close(sock_client);
     return 0;
