@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 23:43:27
+ * @LastEditTime: 2023-12-28 10:51:12
  * @FilePath: /learning-cryptology/ab/alice.cpp
  * @Description:
  *
@@ -36,6 +36,9 @@ const std::string alice_n_str = "57952246800305824399323971895071182850080074948
 const std::string ca_e_str = "48230234972912824395842558097639002513568074476425538103268507341286887459231";
 
 const std::string ca_n_str = "619602684616718133248166089597571487511277402914611620850125903424668688104687670617378588775835487311063258626548554081827812655925357694818063993928526158345239445898782939091939534158590104237602533025009702708312473083110552254979005350786410296624529923063440890284652345112272600681355857616730143146815018336562190721398854580071921151308489054038089831835855652447214604080474324413176928326486156913321758465185674780798384482836956528975868405845522525584348905831801107722404011544272835142084995828581965045114648892493671003801328310152648415556547166218496006151999501918778575259950301418580325847216333782171847192858517438607670864898944012265229831003226596417986859654041555237089012297250957831824506518898039849667441035198614256630307837962864485936438192773058171655684737474296652245829932551480504038519905494148852150387567449487862996399079029669341374317456363373157341294071261687446233389489525278305797441376350202598176868140794246405466660433438702380961687906758250650466175257003880442503576664576169994242705332173013315618901593667359420965063396903165950548639725829800214737507511974963928624712688275462581538292339732451089219745284674444592936397213730800316583112799882291891921182659058507";
+
+// bob 的私钥 test
+const std::string bob_d_str = "389825748650402112134998776902132410583756908795024087245043139972646260814652967766179757895076724324424081908933719324919154409923680787019794127142845663790100570927209749852804608397958623395452952169718062102001696545990613220524183760279403876536863781906843189651452294462993098322137869373346135791091448839388316574504890237834041581893945918588079631728648275457986697040852588184736836642504611241090768420802545035238600480905724655482622424334110555423605804864582830596116980404501410937562352717408126311530533439228808772759197002211467039493127308998434626959947017724681616020520060415920226628755122652882473546780487130614676753627020633593753968285702644394044824964462378203844871726930362345321603050978034850474500806416129949564886007770370924795918777565288858625442883356775478699639526885200140642915200644477545201132310828772384876447734353091324631919532742491325384329582870476467670261397155965843344730475544353019635243976248058209043526254838295719296369854280595991011646450445420259065830297809196883680118510975487656614251893087536033739386752509345357240916292252008364627090718855213294454960957328525211782965794756090611820700899401134982007188441220621409380137164937884794665026664870849";
 
 struct CA
 {
@@ -188,11 +191,88 @@ std::string encrypt_k(string in, CA target)
     CryptoPP::Integer e(target.e.c_str());
     CryptoPP::Integer n(target.n.c_str());
     CryptoPP::Integer c = a_exp_b_mod_c(m, e, n);
-    cout << "e: " << e << endl;
-    cout << "n: " << n << endl;
+    cout << "加密前Int  " << m << endl;
+    cout << "加密后Int  " << c << endl;
     string k = RSA::decode_string(c);
     std::cout << "[k_len]" << k.length() << std::endl;
     return k;
+}
+
+// aes加密
+std::string enString(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, std::string input)
+{
+
+    std::vector<unsigned char> in{};
+    std::vector<unsigned char> out{};
+
+    std::cout << "=========== 字符串加密 ===========" << std::endl;
+
+    in.assign(input.begin(), input.end());
+    out.assign(input.begin(), input.end());
+
+    // 加密前
+    std::cout << "加密前: " << std::endl;
+    for (auto i : in)
+    {
+        std::cout << std::hex << static_cast<int>(i);
+    }
+    std::cout << std::endl;
+
+    AES aes(AESMode::AES_128);
+    out = aes.encrypt_CFB(in, k, iv);
+    std::cout << "加密结果: " << std::endl;
+    for (auto i : out)
+    {
+        std::cout << std::hex << static_cast<int>(i);
+    }
+    std::cout << std::endl;
+    // out转string
+    std::string out_str(out.begin(), out.end());
+    return out_str;
+
+    in = out;
+    // 由于输入的hash值刚好是aes分组倍数，解密时不要去补位
+    out = aes.decrypt_CFB(in, k, iv, false);
+    std::cout << "解密结果: " << std::endl;
+    for (auto i : out)
+    {
+        std::cout << std::hex << static_cast<int>(i);
+    }
+    std::cout << std::endl;
+}
+
+void buffer_en(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, string filename)
+{
+    std::string output_filename = "alice_mid.aes";
+    std::vector<unsigned char> in{};
+    std::vector<unsigned char> out{};
+
+    std::cout << "=========== 大文件加密 ===========" << std::endl;
+
+    AES aes(AESMode::AES_128);
+
+    std::ifstream input_file(filename, std::ios::binary);
+    std::ofstream output_file(output_filename, std::ios::binary);
+
+    char *buffer = new char[BUFFER_SIZE];
+
+    while (true)
+    {
+        input_file.read(buffer, BUFFER_SIZE);
+        std::streamsize size = input_file.gcount();
+        std::cout << "加密大小: " << size << std::endl;
+        if (size == 0)
+        {
+            break;
+        }
+        in.assign(buffer, buffer + size);
+        out = aes.encrypt_CFB(in, k, iv);
+        output_file.write(reinterpret_cast<const char *>(out.data()), out.size());
+    }
+
+    delete[] buffer;
+    input_file.close();
+    output_file.close();
 }
 
 int main()
@@ -239,22 +319,6 @@ int main()
     std::string k = encrypt_k(key_iv_str, target);
     cout << "[k len2] " << k.length() << endl;
 
-    // ！！！！灵异事件 len 2 和 len 3 值不一样
-    // 输出key 和 iv
-    std::cout << "[gen_key: ]";
-    for (auto i : key)
-    {
-        // std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
-    std::cout << "[gen_iv:  ] ";
-    for (auto i : iv)
-    {
-        // std::cout << std::hex << static_cast<int>(i);
-    }
-    std::cout << std::endl;
-    cout << "[k len3] " << k.length() << endl;
-
     if (send(sock_client, k.c_str(), k.length(), 0) == -1)
     {
         std::cout << "发送失败\n";
@@ -262,7 +326,7 @@ int main()
         return 0;
     }
 
-        std::cout << "[gen_key: ]";
+    std::cout << "[gen_key: ]";
     for (auto i : key)
     {
         std::cout << std::hex << static_cast<int>(i);
@@ -275,17 +339,66 @@ int main()
     }
     std::cout << std::endl;
 
-    // if (send(sock_client, file_sig.c_str(), file_sig.length(), 0) == -1)
+    // 3 发送sig
+    std::string en_sig = enString(key, iv, file_sig);
+    cout << "[en_sig_len]" << en_sig.length() << endl;
+    if (send(sock_client, en_sig.c_str(), en_sig.length(), 0) == -1)
+    {
+        std::cout << "发送失败\n";
+        close(sock_client);
+        return 0;
+    }
+    // 加密文件
+    // buffer_en(key, iv, "q.mkv");
+
+    // 发送文件
+    ifstream file("q.mkv", ios::binary | ios::ate);
+    if (!file)
+    {
+        cout << "    无法打开文件" << endl;
+        close(sock_client);
+        return -1;
+    }
+
+    // // 获取文件大小
+    // streampos fileSize = file.tellg();
+    // file.seekg(0, ios::beg);
+
+    // // 发送文件大小;若大小为0,发送失败
+    // size_t size = send(sock_client, (char *)&fileSize, sizeof(fileSize), 0);
+    // if (size == -1)
     // {
-    //     cout << "发送失败\n";
+    //     cout << "    发送文件,失败\n";
     //     close(sock_client);
-    //     return 0;
+    //     file.close();
+    //     return -1;
     // }
-    // else
+
+    // // 发送文件内容
+    // while (fileSize > 0)
     // {
-    //     cout << alice_d_str.c_str() << endl;
-    //     cout << alice_d_str.length() << endl;
+    //     size = file.readsome(buffer, BUFFER_SIZE);
+    //     if (size == 0)
+    //     {
+    //         cout << "    读取文件内容失败" << endl;
+    //         break;
+    //     }
+    //     else
+    //     {
+    //         size = send(sock_client, buffer, size, 0);
+    //         if (size == -1)
+    //         {
+    //             cout << "    发送文件内容失败\n";
+    //             break;
+    //         }
+    //         fileSize -= size;
+    //     }
     // }
+
+    // file.close();
+    // cout << "    文件发送完成" << endl;
+    // cout << "---------------- \n"
+    //      << endl;
 
     // 关闭套接字
     close(sock_client);

@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 23:28:40
+ * @LastEditTime: 2023-12-28 10:51:13
  * @FilePath: /learning-cryptology/ab/bob.cpp
  * @Description:
  *
@@ -17,6 +17,7 @@
 #include <string.h> // for memset
 #include "rsa.h"
 #include "md5.h"
+#include "aes.h"
 #define PORT 55035
 #define BUFFER_SIZE 4096
 using namespace std;
@@ -35,9 +36,86 @@ const std::string ca_n_str = "61960268461671813324816608959757148751127740291461
 std::string decryptKey(const std::string &in)
 {
     CryptoPP::Integer c = RSA::encode_string(in);
-    CryptoPP::Integer n = RSA::encode_string(bob_n_str);
-    CryptoPP::Integer d = RSA::encode_string(bob_d_str);
+    CryptoPP::Integer n(bob_n_str.c_str());
+    CryptoPP::Integer d(bob_d_str.c_str());
     return RSA::decode_string((a_exp_b_mod_c(c, d, n)));
+}
+
+// aes解密
+std::string deString(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, std::string input)
+{
+
+    std::vector<unsigned char> in{};
+    std::vector<unsigned char> out{};
+
+    std::cout << "=========== 字符串解密 ===========" << std::endl;
+
+    in.assign(input.begin(), input.end());
+    out.assign(input.begin(), input.end());
+
+    // 解密前
+    std::cout << "解密前: " << std::endl;
+    for (auto i : in)
+    {
+        std::cout << std::hex << static_cast<int>(i);
+    }
+    std::cout << std::endl;
+
+    AES aes(AESMode::AES_128);
+
+    // 由于输入的hash值刚好是aes分组倍数，解密时不要去补位
+    out = aes.decrypt_CFB(in, k, iv, false);
+    std::cout << "解密结果: " << std::endl;
+    for (auto i : out)
+    {
+        std::cout << std::hex << static_cast<int>(i);
+    }
+    std::cout << std::endl;
+    // out转string
+    std::string out_str(out.begin(), out.end());
+    return out_str;
+}
+
+void buffer_de(const std::vector<unsigned char> &k, const std::vector<unsigned char> &iv, string filename)
+{
+    std::string output_filename = "x.mkv";
+
+    std::vector<unsigned char> in{};
+    std::vector<unsigned char> out{};
+
+    std::cout << "=========== 大文件解密 ===========" << std::endl;
+
+    AES aes(AESMode::AES_128);
+
+    std::ifstream input_file(filename, std::ios::binary);
+    std::ofstream output_file(output_filename, std::ios::binary);
+
+    char *buffer = new char[BUFFER_SIZE];
+
+    while (true)
+    {
+        input_file.read(buffer, BUFFER_SIZE);
+        std::streamsize size = input_file.gcount();
+        std::cout << "解密大小: " << size << std::endl;
+        if (size == 0)
+        {
+            break;
+        }
+        in.assign(buffer, buffer + size);
+        if (size < BUFFER_SIZE)
+        {
+            out = aes.decrypt_CFB(in, k, iv, true);
+        }
+        else
+        {
+            out = aes.decrypt_CFB(in, k, iv, false);
+        }
+        output_file.write(reinterpret_cast<const char *>(out.data()), out.size());
+    }
+
+    delete[] buffer;
+    input_file.close();
+    output_file.close();
 }
 
 // 发给客户端的信息
@@ -86,8 +164,6 @@ int main()
         }
 
         // 接收 key_iv
-        char buffer_key_iv[BUFFER_SIZE];
-        memset(buffer_key_iv, 0, BUFFER_SIZE);
         int ret2_key = recv(newsock, buffer, sizeof(buffer), 0);
         if (ret2_key == -1)
         {
@@ -95,7 +171,7 @@ int main()
             close(newsock);
             continue;
         }
-        string k(buffer);
+        string k(buffer, ret2_key);
         std::cout << k.length() << std::endl;
         string key_iv_str = decryptKey(k);
         cout << "【接收 key 成功】\n";
@@ -125,6 +201,70 @@ int main()
             std::cout << std::hex << static_cast<int>(i);
         }
         std::cout << std::endl;
+
+        // 接受sig
+        memset(buffer, 0, sizeof(buffer));
+        ssize_t ret3_sig = recv(newsock, buffer, sizeof(buffer), 0);
+        if (ret3_sig == -1)
+        {
+            perror("【接收 sig 失败】\n");
+            close(newsock);
+            continue;
+        }
+        string en_sig(buffer, ret3_sig);
+        cout << "[en_sig len]" << ret3_sig << std::endl; 
+        std::cout << "[sig len:]" << en_sig.length() << std::endl;
+        std::string sig = deString(key, iv, en_sig);
+
+        // 解密文件
+        // buffer_de(key, iv, "alice_mid.aes");
+
+        // 计算文件hash
+        // char *hash = fileMD5("x.mkv");
+        // std::string hash_str(hash);
+        // delete[] hash;
+
+        // 接收服务端将发送的文件的大小
+        streampos fileSize;
+        size_t size = recv(newsock, (char *)&fileSize, sizeof(fileSize), 0);
+        if (size == 0)
+        {
+            cout << "    与alice断开连接\n";
+            close(newsock);
+            return 0;
+        }
+        else
+        {
+            cout << "    接收到的文件大小为 :  " << fileSize << " bytes" << endl;
+        }
+
+        // // 创建文件
+        // ofstream file("i.txt", ios::binary);
+
+        // // 接收文件内容
+        // int remainingSize = fileSize;
+        // while (remainingSize > 0)
+        // {
+        //     size = recv(newsock, buffer, min(remainingSize, BUFFER_SIZE), 0);
+        //     if (size == 0)
+        //     {
+        //         cout << "    对方已关闭连接！\n";
+        //         break;
+        //     }
+        //     else if (size == -1)
+        //     {
+        //         cout << "    接收文件内容失败\n";
+        //         break;
+        //     }
+        //     else
+        //     {
+        //         file.write(buffer, size);
+        //         remainingSize -= size;
+        //     }
+        // }
+
+        // file.close();
+        // cout << "    文件接收完成,保存为:  received_"  << endl;
 
         // 发送完成,结束本次TCP连接
         close(newsock);
