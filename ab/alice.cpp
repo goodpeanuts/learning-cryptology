@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 23:19:29
+ * @LastEditTime: 2023-12-31 17:06:24
  * @FilePath: /learning-cryptology/ab/alice.cpp
  * @Description:
  *
@@ -306,6 +306,7 @@ int main()
 
     // 生成随机key 和 iv
     std::string key_iv_str = generate_aes_key_iv(key, iv);
+    // 使用Bob的公钥加密key 和 iv
     std::string k = encrypt_k(key_iv_str, target);
 
     msg_len = k.length();
@@ -353,10 +354,10 @@ int main()
     /***************  5.发送加密文件  *********************/
     cout << "\033[33m[发送加密文件]\n\033[0m";
     // 加密文件
-    buffer_en(key, iv, filename, "aes");
+    buffer_en(key, iv, filename, "mid");
 
     // 发送文件
-    ifstream file("aes", ios::binary | ios::ate);
+    ifstream file("mid", ios::binary | ios::ate);
     if (!file)
     {
         perror("### 无法打开文件 ###");

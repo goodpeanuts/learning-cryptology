@@ -1,9 +1,9 @@
 /*
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-11 15:25:41
- * @LastEditors: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
- * @LastEditTime: 2023-12-11 15:45:01
- * @FilePath: /learning-cryptology/Sequence_cipher/lsrf.cpp
+ * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
+ * @LastEditTime: 2023-12-29 13:02:58
+ * @FilePath: /learning-cryptology/sequence_cipher/lsrf.cpp
  * @Description:
  *
  * Copyright (c) 2023 by goodpeanuts, All Rights Reserved.
@@ -43,8 +43,8 @@ std::pair<std::vector<char>, std::vector<std::string>> lfsr(const std::vector<in
 
 int main()
 {
-    // 18 8 7 4 0
-    std::cout << "请输入本原多项式(例如x^5+x^2+1,输入5 2 1)\n";
+    // 16 5 3 2
+    std::cout << "请输入本原多项式\n";
     std::string num_str;
     std::getline(std::cin, num_str);
     std::vector<int> num;

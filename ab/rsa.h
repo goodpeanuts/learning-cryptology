@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-25 15:51:45
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 14:30:48
+ * @LastEditTime: 2023-12-29 13:21:22
  * @FilePath: /learning-cryptology/ab/rsa.h
  * @Description:
  *
@@ -11,15 +11,8 @@
 #include <iostream>
 #include <cassert>
 #include <cryptopp/osrng.h>
-#include <cryptopp/base64.h>
-#include <cryptopp/rsa.h>
 #include <cryptopp/integer.h>
 #include <cryptopp/nbtheory.h>
-#include <cryptopp/files.h>
-
-#include <cryptopp/integer.h>
-#include <cryptopp/nbtheory.h>
-#include <cryptopp/osrng.h>
 
 class RSA
 {

@@ -5,7 +5,7 @@ CC = gcc
 ROOT_DIR = $(shell git rev-parse --show-toplevel)
 
 # 指定源文件
-SRCS = main.c md5.c
+SRCS = md5_main.c md5.c
 
 # 指定目标文件
 TARGET = $(ROOT_DIR)/target/md5

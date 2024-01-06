@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:38:23
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-27 21:03:52
+ * @LastEditTime: 2023-12-29 14:19:11
  * @FilePath: /learning-cryptology/aes/aes.h
  * @Description:
  *
@@ -47,7 +47,7 @@ public:
     }
 
     static constexpr unsigned int Nb = 4;                                         // 分组长度
-    static constexpr unsigned int blockByteslen = 4 * Nb * sizeof(unsigned char); // 每组位数128
+    static constexpr unsigned int blockBytesLen = 4 * Nb * sizeof(unsigned char); // 每组位数128
 
     unsigned int Nk;
     unsigned int Nr;
@@ -356,13 +356,13 @@ public:
     void padding_iso10126(std::vector<unsigned char> &v)
     {
         unsigned int len = v.size();
-        unsigned int padlen = blockByteslen - len % blockByteslen;
+        unsigned int padlen = blockBytesLen - len % blockBytesLen;
         unsigned char padbyte = padlen;
 
         std::cout << "@" << std::endl;
         std::cout << "填充前: " << v.size() << std::endl;
-        std::cout << "blockByteslen: " << blockByteslen << std::endl;
-        std::cout << "len % blockByteslen: " << len % blockByteslen << std::endl;
+        std::cout << "blockByteslen: " << blockBytesLen << std::endl;
+        std::cout << "len % blockByteslen: " << len % blockBytesLen << std::endl;
         std::cout << "填充长度: " << padlen << std::endl;
 
         // 创建一个随机数生成器
@@ -445,6 +445,17 @@ public:
                 out[i + 4 * j] = state[i][j];
     }
 
+    void check_length(std::vector<unsigned char> &in)
+    {
+        std::cout << "输入长度: " << in.size() << std::endl;
+        if (in.size() % blockBytesLen != 0)
+        {
+            std::cout << "输入长度不是16的倍数" << std::endl;
+            padding_iso10126(in);
+        }
+    }
+
+    /*******************   CFB  *******************/
     /**
      * @brief CFB加密
      * @param in    明文输入
@@ -458,16 +469,16 @@ public:
                                const unsigned char *iv)
     {
         unsigned char *out = new unsigned char[inLen];
-        unsigned char block[blockByteslen];
-        unsigned char encryptedBlock[blockByteslen];
+        unsigned char block[blockBytesLen];
+        unsigned char encryptedBlock[blockBytesLen];
         unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
         key_expansion(key, roundKeys);
-        memcpy(block, iv, blockByteslen);
-        for (unsigned int i = 0; i < inLen; i += blockByteslen)
+        memcpy(block, iv, blockBytesLen);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
         {
             encrypt_block(block, encryptedBlock, roundKeys);
-            xor_blocks(in + i, encryptedBlock, out + i, blockByteslen);
-            memcpy(block, out + i, blockByteslen);
+            xor_blocks(in + i, encryptedBlock, out + i, blockBytesLen);
+            memcpy(block, out + i, blockBytesLen);
         }
 
         delete[] roundKeys;
@@ -487,12 +498,7 @@ public:
                                            std::vector<unsigned char> key,
                                            std::vector<unsigned char> iv)
     {
-        std::cout << "输入长度: " << in.size() << std::endl;
-        if (in.size() % blockByteslen != 0)
-        {
-            std::cout << "输入长度不是16的倍数" << std::endl;
-            padding_iso10126(in);
-        }
+        check_length(in);
         unsigned char *out = encrypt_CFB(vector_to_array(in), (unsigned int)in.size(),
                                          vector_to_array(key), vector_to_array(iv));
         std::vector<unsigned char> v = array_to_vector(out, in.size());
@@ -516,28 +522,21 @@ public:
                                bool final)
     {
         unsigned char *out = new unsigned char[inLen];
-        unsigned char block[blockByteslen];
-        unsigned char encryptedBlock[blockByteslen];
+        unsigned char block[blockBytesLen];
+        unsigned char encryptedBlock[blockBytesLen];
         unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
         key_expansion(key, roundKeys);
-        memcpy(block, iv, blockByteslen);
-        for (unsigned int i = 0; i < inLen; i += blockByteslen)
+        memcpy(block, iv, blockBytesLen);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
         {
             encrypt_block(block, encryptedBlock, roundKeys);
-            xor_blocks(in + i, encryptedBlock, out + i, blockByteslen);
-            memcpy(block, in + i, blockByteslen);
+            xor_blocks(in + i, encryptedBlock, out + i, blockBytesLen);
+            memcpy(block, in + i, blockBytesLen);
         }
         if (final)
-        {
-            std::cout << "解密输入: " << inLen << std::endl;
-            std::cout << "补位长度: " << (unsigned int)out[inLen - 1] << std::endl;
             outLen = inLen - (unsigned int)out[inLen - 1];
-            std::cout << "输出长度: " << outLen << std::endl;
-        }
         else
-        {
             outLen = inLen;
-        }
         return out;
     }
 
@@ -561,7 +560,152 @@ public:
         std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
         delete[] out;
         v.resize(outLen);
-        std::cout << "v.size(): " << v.size() << std::endl;
+        return v;
+    }
+
+    /*******************   ECB  *******************/
+    // ECB加密
+    unsigned char *EncryptECB(const unsigned char in[], unsigned int inLen,
+                              const unsigned char key[])
+    {
+        unsigned char *out = new unsigned char[inLen];
+        unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
+        key_expansion(key, roundKeys);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
+        {
+            encrypt_block(in + i, out + i, roundKeys);
+        }
+        delete[] roundKeys;
+        return out;
+    }
+
+    // ECB加密接口
+    std::vector<unsigned char> EncryptECB(std::vector<unsigned char> in,
+                                          std::vector<unsigned char> key)
+    {
+        check_length(in);
+        unsigned char *out = EncryptECB(vector_to_array(in), (unsigned int)in.size(),
+                                        vector_to_array(key));
+        std::vector<unsigned char> v = array_to_vector(out, in.size());
+        std::cout << "[v.size] " << v.size() << std::endl;
+        delete[] out;
+        return v;
+    }
+
+    // ECB解密
+    unsigned char *DecryptECB(const unsigned char in[], unsigned int inLen,
+                              const unsigned char key[],
+                              unsigned int &outLen,
+                              bool final)
+    {
+        std::cout << "in " << in << std::endl;
+        std::cout << "de inLen: " << inLen << std::endl;
+        unsigned char *out = new unsigned char[inLen];
+        unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
+        key_expansion(key, roundKeys);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
+        {
+            decrypt_block(in + i, out + i, roundKeys);
+        }
+        // if (final)
+        //     outLen = inLen - (unsigned int)out[inLen - 1];
+        // else
+        outLen = inLen;
+        delete[] roundKeys;
+
+        return out;
+    }
+
+    // ECB解密接口
+    std::vector<unsigned char> DecryptECB(std::vector<unsigned char> in,
+                                          std::vector<unsigned char> key,
+                                          bool final)
+    {
+        unsigned int outLen{};
+        unsigned char *out = DecryptECB(vector_to_array(in), (unsigned int)in.size(),
+                                        vector_to_array(key),
+                                        outLen, final);
+        std::cout << "输出长度: " << outLen << std::endl;
+        std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
+        delete[] out;
+        v.resize(outLen);
+        return v;
+    }
+
+    /*******************   CBC  *******************/
+    // CBC加密
+    unsigned char *EncryptCBC(const unsigned char in[], unsigned int inLen,
+                              const unsigned char key[],
+                              const unsigned char *iv)
+    {
+        unsigned char *out = new unsigned char[inLen];
+        unsigned char block[blockBytesLen];
+        unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
+        key_expansion(key, roundKeys);
+        memcpy(block, iv, blockBytesLen);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
+        {
+            xor_blocks(block, in + i, block, blockBytesLen);
+            encrypt_block(block, out + i, roundKeys);
+            memcpy(block, out + i, blockBytesLen);
+        }
+
+        delete[] roundKeys;
+
+        return out;
+    }
+
+    // CBC加密接口
+    std::vector<unsigned char> encrypt_CBC(std::vector<unsigned char> in,
+                                          std::vector<unsigned char> key,
+                                          std::vector<unsigned char> iv)
+    {
+        check_length(in);
+        unsigned char *out = EncryptCBC(vector_to_array(in), (unsigned int)in.size(),
+                                        vector_to_array(key), vector_to_array(iv));
+        std::vector<unsigned char> v = array_to_vector(out, in.size());
+        delete[] out;
+        return v;
+    }
+    
+    // CBC解密
+    unsigned char *DecryptCBC(const unsigned char in[], unsigned int inLen,
+                              const unsigned char key[],
+                              const unsigned char *iv,
+                              unsigned int &outLen,
+                              bool final)
+    {
+        unsigned char *out = new unsigned char[inLen];
+        unsigned char block[blockBytesLen];
+        unsigned char *roundKeys = new unsigned char[4 * Nb * (Nr + 1)];
+        key_expansion(key, roundKeys);
+        memcpy(block, iv, blockBytesLen);
+        for (unsigned int i = 0; i < inLen; i += blockBytesLen)
+        {
+            decrypt_block(in + i, out + i, roundKeys);
+            xor_blocks(block, out + i, out + i, blockBytesLen);
+            memcpy(block, in + i, blockBytesLen);
+        }
+
+        if (final)
+            outLen = inLen - (unsigned int)out[inLen - 1];
+        else
+            outLen = inLen;
+        return out;
+    }
+
+    // CBC解密接口
+    std::vector<unsigned char> decrypt_CBC(std::vector<unsigned char> in,
+                                               std::vector<unsigned char> key,
+                                               std::vector<unsigned char> iv,
+                                               bool final)
+    {
+        unsigned int outLen{};
+        unsigned char *out = DecryptCBC(vector_to_array(in), (unsigned int)in.size(),
+                                        vector_to_array(key), vector_to_array(iv), outLen, final);
+        std::vector<unsigned char> v = array_to_vector(out, (unsigned int)in.size());
+        delete[] out;
+        v.resize(outLen);
         return v;
     }
 };

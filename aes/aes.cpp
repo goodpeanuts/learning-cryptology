@@ -2,7 +2,7 @@
  * @Author: goodpeanuts 143506992+goodpeanuts@users.noreply.github.com
  * @Date: 2023-12-12 08:16:20
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-26 23:06:35
+ * @LastEditTime: 2023-12-29 11:11:06
  * @FilePath: /learning-cryptology/aes/aes.cpp
  * @Description:
  *
@@ -15,7 +15,7 @@
 #include <string>
 #include "aes.h"
 
-const size_t BUFFER_SIZE = 4 * 1024 *1024 ; // 1kB
+const size_t BUFFER_SIZE = 4 * 1024 * 1024; // 1kB
 
 const char *welcom_msg = "=========== AES ===========\n"
                          "1. 测试字符串\n"
@@ -87,16 +87,19 @@ void testString()
     std::cout << std::endl;
 
     AES aes(AESMode::AES_128);
-    out = aes.encrypt_CFB(in, k, iv);
+    out = aes.encrypt_CFB(in, k, iv);    //CFB
+    // out = aes.EncryptECB(in, k);
     std::cout << "加密结果: " << std::endl;
+    std::cout << "aa out: " << out.size() << std::endl;
     for (auto i : out)
     {
         std::cout << std::hex << static_cast<int>(i);
     }
     std::cout << std::endl;
-
+    std::cout << "aa out: " << out.size() << std::endl;
     in = out;
-    out = aes.decrypt_CFB(in, k, iv, true);
+    out = aes.decrypt_CFB(in, k, iv, true); //CFB
+    // out = aes.DecryptECB(in, k, true);
     std::cout << "解密结果: " << std::endl;
     for (auto i : out)
     {
@@ -221,7 +224,7 @@ void buffer_de()
     {
         input_file.read(buffer, BUFFER_SIZE);
         std::streamsize size = input_file.gcount();
-        std::cout << "解密大小: " << size  << std::endl;
+        std::cout << "解密大小: " << size << std::endl;
         if (size == 0)
         {
             break;
@@ -242,7 +245,6 @@ void buffer_de()
     input_file.close();
     output_file.close();
 }
-
 
 // 1234567890abcdef
 int main()

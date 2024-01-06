@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-26 23:13:47
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 23:27:17
+ * @LastEditTime: 2023-12-29 13:26:54
  * @FilePath: /learning-cryptology/ab/bob.cpp
  * @Description:
  *
@@ -318,7 +318,7 @@ int main()
         }
 
         // 创建文件
-        ofstream file("aes", ios::binary);
+        ofstream file("mid", ios::binary);
         // ofstream file;
 
         // 接收文件内容
@@ -339,7 +339,7 @@ int main()
         cout << "\033[32m[文件接收完成]\033[0m" << endl;
 
         // 解密文件
-        buffer_de(key, iv, "aes", filename);
+        buffer_de(key, iv, "mid", filename);
 
         /***************  6.接收alice加密证书  *********************/
         recv(newsock, (char *)&msg_len, sizeof(msg_len), 0);

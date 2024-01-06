@@ -2,7 +2,7 @@
  * @Author: goodpeanuts goddpeanuts@foxmail.com
  * @Date: 2023-12-27 12:06:13
  * @LastEditors: goodpeanuts goddpeanuts@foxmail.com
- * @LastEditTime: 2023-12-28 22:09:59
+ * @LastEditTime: 2023-12-29 13:21:53
  * @FilePath: /learning-cryptology/ab/ca.cpp
  * @Description: 数字签名和CA认证
  *
@@ -12,6 +12,7 @@
 #include <cassert>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include "rsa.h"
 #include "md5.h"
 
